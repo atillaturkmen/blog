@@ -1,0 +1,18 @@
+extends layout
+
+block content
+  br
+  h1 BLOG
+  br
+  form#registration-form(action='', method='post' class="form-registration")
+        .form-row
+        .form-group.col-md-4
+            input#username.form-control(type="text", name="username", placeholder="user name", required)
+            br
+            input#password.form-control(type='password', name='password', placeholder='password', required)
+            br
+        button.btn.btn-primary.float-left(type='submit') Log in
+  br
+  br
+  br
+  a.badge.badge-primary(href='/registration') If you don't have an account yet, click here.

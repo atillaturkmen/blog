@@ -1,0 +1,35 @@
+extends layout
+
+block content
+    br
+    h1 BLOG
+    a.btn.btn-warning.float-right(href="/logout") Log out
+    p Click here to write something >
+        a.button.btn(href='/add')
+            i.fa.fa-plus-circle
+    br
+    br
+    if data.length
+        table.table-bordered.table-hover
+            thead
+                tr
+                    th.text-center Title
+                    th.text-center Summary
+                    th.text-center Author
+                    th.text-center Last Updated
+                    th.text-center Delete
+                tbody
+                    each article in data
+                        tr
+                            td.text-center
+                                a(href=`/read/${article.id}`)= article.title
+                            td.text-center= article.summary
+                            td.text-center= article.author
+                            td.text-center= article.date_established
+                            td.text-center
+                                a.button.btn(href=`/delete/${article.id}`, onclick="return confirm('Do you confirm to delete this article?')")
+                                    i.fa.fa-trash
+                                //a.badge.badge-danger(href=`/delete/${article.id}`, onclick="return confirm('Do you confirm to delete this article?')") DELETE
+    else
+        br
+        p No contribitions yet :(

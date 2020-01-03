@@ -1,0 +1,24 @@
+{
+  "name": "aa",
+  "version": "1.0.0",
+  "description": "",
+  "main": "demo.js",
+  "scripts": {
+    "watch": "nodemon ./demo.js"
+  },
+  "author": "Atilla",
+  "license": "ISC",
+  "dependencies": {
+    "@primer/octicons": "^9.3.1",
+    "cookie-session": "^1.3.3",
+    "express": "^4.17.1",
+    "express-session": "^1.17.0",
+    "express-validator": "^6.3.1",
+    "mysql": "^2.17.1",
+    "octicons": "^8.5.0",
+    "pug": "^2.0.4"
+  },
+  "devDependencies": {
+    "@fortawesome/fontawesome-free": "^5.12.0"
+  }
+}
