@@ -13,7 +13,7 @@ mysql 8.0.18
 
 SETUP  
 
-First of all, make sure you have node.js and mysql installed on your pc and that they are up-to-date.
-Then, copy the code in blog-database.sql to mysql workbench and run it. In this way, you create the database of the blog.
-Finally, run the demo.js file via a file explorer or from the command line.
-Now you can visit "localhost:3000" in your browser and see the functioning app.
+First of all, make sure you have node.js and mysql installed on your pc and that they are up-to-date.  
+Then, copy the code in blog-database.sql to mysql workbench and run it. In this way, you create the database of the blog.  
+Finally, run the demo.js file via a file explorer or from the command line.  
+Now you can visit "localhost:3000" in your browser and see the functioning app.  
