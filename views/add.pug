@@ -2,8 +2,9 @@ extends layout
 
 block content
     br
-    a.btn.btn-warning.float-right(href="/logout") Log out
-    a.btn.btn-primary.float-left(href="/") < Homepage 
+    a.btn.btn-warning.float-right(href="/logout") Log out 
+        i.fa.fa-sign-out
+    a.btn.btn-primary.float-left(href="/") 
         i.fa.fa-home
     br
     br
@@ -19,7 +20,8 @@ block content
             //#summary(rows="12", cols="135", name="content", placeholder="Write here", required)
             br
             textarea#content(rows="12", cols="135", name="content", placeholder="Write here", required)
-        button.btn.btn-primary.float-right(type='submit') Submit
+        button.btn.btn-primary.float-right(type='submit') Submit 
+            i.fa.fa-share-square-o
 
     script.
         let summary = new FroalaEditor('textarea#summary', {

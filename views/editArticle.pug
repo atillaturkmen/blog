@@ -2,12 +2,14 @@ extends layout
 
 block content
     br
-    a.btn.btn-warning.float-right(href="/logout") Log out
-    a.btn.btn-primary.float-left(href="/") < Homepage 
+    a.btn.btn-warning.float-right(href="/logout") Log out 
+        i.fa.fa-sign-out
+    a.btn.btn-primary.float-left(href="/") 
         i.fa.fa-home
     br
     br
-    a.btn.btn-secondary.float-left(href=`/read/${data.id}`) < Back to reading
+    a.btn.btn-secondary.float-left(href=`/read/${data.id}`) < Back to reading 
+        i.fa.fa-book
     br
     br
     br
@@ -22,7 +24,8 @@ block content
             br
             textarea#content(contenteditable='', rows="12", cols="135", name="content", required)= data.content
                 
-        button.btn.btn-primary.float-right(type='submit') Submit
+        button.btn.btn-primary.float-right(type='submit') Submit 
+            i.fa.fa-share-square-o
     script.
         let summary = new FroalaEditor('textarea#summary')
         let content = new FroalaEditor("textarea#content")
