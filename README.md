@@ -6,9 +6,9 @@ Programs you need to be able to execute the blog application:
 
 Application built on:
 
-node version 12.13.1  
-express version 4.17.1  
-mysql 8.0.18  
+- node version 12.13.1  
+- express version 4.17.1  
+- mysql 8.0.18  
 
 
 SETUP  
