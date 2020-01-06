@@ -24,6 +24,7 @@ router.get("/" ,(req, res) => {
                 res.render("articles", {
                     title: "Articles",
                     data: result,
+                    user: req.session.username,
                 });
             });
     }
@@ -46,11 +47,23 @@ router.post("/", (req, res) => {
                 if (err) {
                     throw (err);
                 }
+                let lastUpdated;
+                result.forEach(element => {
+                    lastUpdated = element.last_updated;
+                    let now = new Date();
+                    let fark = now - lastUpdated;
+                    if (fark < 60000) {lastUpdated = `${Math.round(fark/1000)} seconds ago`;}
+                    else if (fark < 3600000) {lastUpdated = `${Math.round(fark/60000)} minutes ago`;}
+                    else if (fark < 86400000) {lastUpdated = `${Math.round(fark/3600000)} hours ago`;}
+                    else {lastUpdated = `${Math.round(fark/86400000)} days ago`;}
+                    element.before = lastUpdated;
+                });
                 req.session.loggedIn = 1;
                 req.session.username = username;
                 res.render("articles", {
                     title: "Articles",
                     data: result,
+                    user: req.session.username,
                 });
             });
         }
@@ -141,7 +154,13 @@ router.get("/read/:id", (req, res) => {
         if (err) {
             throw err;
         }
-        res.render("readArticle", {
+        if (result[0].author == req.session.username) {
+            res.render("readArticle", {
+                title: result[0].title,
+                data: result[0],
+            });
+        }
+        else res.render("readOthersArticle", {
             title: result[0].title,
             data: result[0],
         });
