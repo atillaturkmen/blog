@@ -1,17 +1,17 @@
 # blog
 
-Programs you need to be able to execute the blog application:
-1. node.js
-2. mysql
+Programs you need to be able to execute the blog application:  
+1. node.js  
+2. mysql  
 
 Application built on:
 
-node version 12.13.1
-express version 4.17.1
-mysql 8.0.18
+node version 12.13.1  
+express version 4.17.1  
+mysql 8.0.18  
 
 
-SETUP
+SETUP  
 
 First of all, make sure you have node.js and mysql installed on your pc and that they are up-to-date.
 Then, copy the code in blog-database.sql to mysql workbench and run it. In this way, you create the database of the blog.
