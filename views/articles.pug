@@ -23,7 +23,7 @@ block content
                         tr
                             td.text-center
                                 a(href=`/read/${article.id}`)= article.title
-                            td.text-center= article.summary
+                            td.text-center!= article.summary
                             td.text-center= article.author
                             td.text-center= article.date_established
                             td.text-center

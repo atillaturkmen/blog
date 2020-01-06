@@ -11,11 +11,14 @@ block content
     br
     form#content-form(action='', method='post' class="form-registration")
         .form-row
-        .form-group.col-md-4
-            input#title.form-control(type="text", name="title", value= data.title, required)
+        .form-group.col-md-12
+            input#title.form-control(type="text", name="title", value= data.title, autocomplete= "off", required)
             br
             textarea#summary(contenteditable='', rows="4", cols="135", name="summary", required)= data.summary
             br
             textarea#content(contenteditable='', rows="12", cols="135", name="content", required)= data.content
                 
         button.btn.btn-primary.float-right(type='submit') Submit
+    script.
+        let summary = new FroalaEditor('textarea#summary')
+        let content = new FroalaEditor("textarea#content")

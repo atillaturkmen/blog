@@ -9,11 +9,20 @@ block content
     h3 Write something:
     br
     form#content-form(action='', method='post' class="form-registration")
-        .form-row
-        .form-group.col-md-4
-            input#title.form-control(type="text", name="title", placeholder="Title of your article", required)
+
+        .form-group.col-md-12
+            input#title.form-control(type="text", name="title", placeholder="Title of your article", autocomplete= "off", required)
             br
             textarea#summary(rows="4", cols="135", name="summary", placeholder="Summary of your article", required)
+            //#summary(rows="12", cols="135", name="content", placeholder="Write here", required)
             br
             textarea#content(rows="12", cols="135", name="content", placeholder="Write here", required)
         button.btn.btn-primary.float-right(type='submit') Submit
+
+    script.
+        let summary = new FroalaEditor('textarea#summary', {
+            placeholderText: 'Summary of your article'
+        })
+        let content = new FroalaEditor("textarea#content", {
+            placeholderText: 'Write here'
+        })

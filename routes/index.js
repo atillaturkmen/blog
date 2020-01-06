@@ -106,10 +106,12 @@ router.get("/add", (req, res) => {
 });
 
 router.post("/add", (req, res) => {
+    console.log(req.body.content);
+    console.log(req.body.summary);
     let content = req.body.content;
     let title = req.body.title;
     let summary = req.body.summary;
-    let query = "INSERT INTO `articles` (author, content, summary,title, date_established) VALUES (?, ?, ?, ?, NOW())";
+    let query = "INSERT INTO `articles` (author, content, summary, title, date_established) VALUES (?, ?, ?, ?, NOW())";
     if (!req.session.username) {
         req.session.username = "anonymus";
     }
