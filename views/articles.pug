@@ -10,7 +10,7 @@ block content
     br
     br
     if data.length
-        table.table-bordered.table-hover
+        //table.table-bordered.table-hover
             thead
                 tr
                     th.text-center Title
@@ -29,7 +29,25 @@ block content
                             td.text-center
                                 a.button.btn(href=`/delete/${article.id}`, onclick="return confirm('Do you confirm to delete this article?')")
                                     i.fa.fa-trash
-                                //a.badge.badge-danger(href=`/delete/${article.id}`, onclick="return confirm('Do you confirm to delete this article?')") DELETE
+                                a.badge.badge-danger(href=`/delete/${article.id}`, onclick="return confirm('Do you confirm to delete this article?')") DELETE
+
+        each article in data
+                    .card.border-info.mb-3
+                        .card-body
+                            .text-center
+                                .text-info
+                                    h5.card-title.display-4= article.title
+                                br
+                                .text-dark
+                                    h5.card-text!= article.summary
+                                .text-secondary
+                                    p.card-text= `Last Updated: ${article.before}`
+                                br
+                                a.btn.btn-secondary(href=`/read/${article.id}`) Continue reading
+                                a.btn.float-right(href=`/delete/${article.id}`, onclick="return confirm('Do you confirm to delete this article?')")
+                                    i.fa.fa-trash
+                    br
+
     else
         br
         p No contribitions yet :(

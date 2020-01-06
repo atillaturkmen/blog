@@ -3,7 +3,11 @@ extends layout
 block content
     br
     a.btn.btn-warning.float-right(href="/logout") Log out
-    a.btn.btn-primary.float-left(href="/") < Homepage
+    a.btn.btn-primary.float-left(href="/") < Homepage 
+        i.fa.fa-home
+    br
+    br
+    a.btn.btn-secondary.float-left(href=`/read/${data.id}`) < Back to reading
     br
     br
     br

@@ -10,6 +10,17 @@ router.get("/" ,(req, res) => {
                 if (err) {
                     throw (err);
                 }
+                let lastUpdated;
+                result.forEach(element => {
+                    lastUpdated = element.last_updated;
+                    let now = new Date();
+                    let fark = now - lastUpdated;
+                    if (fark < 60000) {lastUpdated = `${Math.round(fark/1000)} seconds ago`;}
+                    else if (fark < 3600000) {lastUpdated = `${Math.round(fark/60000)} minutes ago`;}
+                    else if (fark < 86400000) {lastUpdated = `${Math.round(fark/3600000)} hours ago`;}
+                    else {lastUpdated = `${Math.round(fark/86400000)} days ago`;}
+                    element.before = lastUpdated;
+                });
                 res.render("articles", {
                     title: "Articles",
                     data: result,
@@ -106,12 +117,10 @@ router.get("/add", (req, res) => {
 });
 
 router.post("/add", (req, res) => {
-    console.log(req.body.content);
-    console.log(req.body.summary);
     let content = req.body.content;
     let title = req.body.title;
     let summary = req.body.summary;
-    let query = "INSERT INTO `articles` (author, content, summary, title, date_established) VALUES (?, ?, ?, ?, NOW())";
+    let query = "INSERT INTO `articles` (author, content, summary, title, date_established, last_updated) VALUES (?, ?, ?, ?, NOW(), NOW())";
     if (!req.session.username) {
         req.session.username = "anonymus";
     }
@@ -184,7 +193,7 @@ router.post("/edit/:id", (req, res) => {
     let content = req.body.content;
     let title = req.body.title;
     let summary = req.body.summary;
-    let query = "UPDATE `articles` SET author = ?, content = ?, summary = ?, title = ?, date_established = NOW() WHERE id = '" + articleId + "';";
+    let query = "UPDATE `articles` SET author = ?, content = ?, summary = ?, title = ?, last_updated = NOW() WHERE id = '" + articleId + "';";
     if (!req.session.username) {
         req.session.username = "anonymus";
     }
