@@ -2,37 +2,19 @@ extends layout
 
 block content
     br
-    h1 BLOG
+    h1 Search Results
+    a.btn.btn-primary.float-left(href="/", style="margin-right:20px;") 
+        i.fa.fa-home
     a.btn.btn-warning.float-right(href="/logout") Log out 
         i.fa.fa-sign-out
     a.btn.float-left(href='/add', style='margin-right:200px;') Write something 
         i.fa.fa-plus-circle
     form#registration-form.form-inline(action='', method='post' class="form-registration")
-        input#search.form-control.col-md-6(type="search", placeholder="Search for an article or author", name="search", style="margin-right:15px;")
+        input#search.form-control.col-md-6(type="search", value=keyword, name="search", style="margin-right:15px;")
         button.btn.btn-outline-info(type="submit")
             i.fa.fa-search
     br
     if data.length
-        //table.table-bordered.table-hover
-            thead
-                tr
-                    th.text-center Title
-                    th.text-center Summary
-                    th.text-center Author
-                    th.text-center Last Updated
-                    th.text-center Delete
-                tbody
-                    each article in data
-                        tr
-                            td.text-center
-                                a(href=`/read/${article.id}`)= article.title
-                            td.text-center!= article.summary
-                            td.text-center= article.author
-                            td.text-center= article.date_established
-                            td.text-center
-                                a.button.btn(href=`/delete/${article.id}`, onclick="return confirm('Do you confirm to delete this article?')")
-                                    i.fa.fa-trash
-                                a.badge.badge-danger(href=`/delete/${article.id}`, onclick="return confirm('Do you confirm to delete this article?')") DELETE                        
         each article in data
             if article.author == user
                     .card.border-info.mb-3
@@ -75,4 +57,4 @@ block content
 
     else
         br
-        p No contribitions yet :(
+        .alert.alert-dark.text-center(role='alert')= `No results were found for ${keyword}`

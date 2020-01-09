@@ -5,7 +5,37 @@ const router = express.Router();
 
 router.get("/" ,(req, res) => {
     if (req.session.loggedIn) {
-        let query = "SELECT * FROM `articles`";
+        res.redirect("/articles");
+    }
+    else {res.render("homepage", {
+        title: "Homepage",
+    });}
+});
+
+router.post("/", (req, res) => {
+    let username = req.body.username;
+    let password = req.body.password;
+    let usernameQuery = "SELECT * FROM `users` WHERE user_name = ? AND password = ?";
+    database.query(usernameQuery, [username, password], (err, result) => {
+        if (err) {
+            return res.status(500).send(err);
+        }
+        if (result.length > 0) {
+            req.session.loggedIn = 1;
+            req.session.username = username;
+            res.redirect("/articles");
+        }
+        else {
+            res.render("wrongPasswordPage", {
+                title: "Homepage"
+            });
+        }
+    });
+});
+
+router.get("/articles", (req, res) => {
+    if (req.session.loggedIn) {
+        let query = "SELECT * FROM `articles` ORDER BY id DESC";
             database.query(query, (err, result) => {
                 if (err) {
                     throw (err);
@@ -28,26 +58,17 @@ router.get("/" ,(req, res) => {
                 });
             });
     }
-    else {res.render("homepage", {
-        title: "Homepage",
-    });}
+    else res.redirect("/");
 });
 
-router.post("/", (req, res) => {
-    let username = req.body.username;
-    let password = req.body.password;
-    let usernameQuery = "SELECT * FROM `users` WHERE user_name = ? AND password = ?";
-    database.query(usernameQuery, [username, password], (err, result) => {
+router.post("/articles", (req, res) => {
+    let search = req.body.search;
+    let query = "SELECT * FROM `articles` WHERE (title LIKE '%"+search+"%' OR summary LIKE '%"+search+"%' OR content LIKE '%"+search+"%' OR author LIKE '%"+search+"%') ORDER BY id DESC;";
+    database.query(query, (err, result) => {
         if (err) {
             return res.status(500).send(err);
         }
-        if (result.length > 0) {
-            let query = "SELECT * FROM `articles`";
-            database.query(query, (err, result) => {
-                if (err) {
-                    throw (err);
-                }
-                let lastUpdated;
+        let lastUpdated;
                 result.forEach(element => {
                     lastUpdated = element.last_updated;
                     let now = new Date();
@@ -58,20 +79,12 @@ router.post("/", (req, res) => {
                     else {lastUpdated = `${Math.round(fark/86400000)} days ago`;}
                     element.before = lastUpdated;
                 });
-                req.session.loggedIn = 1;
-                req.session.username = username;
-                res.render("articles", {
-                    title: "Articles",
-                    data: result,
-                    user: req.session.username,
-                });
-            });
-        }
-        else {
-            res.render("wrongPasswordPage", {
-                title: "Homepage"
-            });
-        }
+        res.render("searchResults", {
+            title: "Search Results",
+            data: result,
+            user: req.session.username,
+            keyword: search,
+        });
     });
 });
 
@@ -124,9 +137,12 @@ router.post("/registration", [
 );
 
 router.get("/add", (req, res) => {
-    res.render("add", {
+    if (req.session.loggedIn) {
+        res.render("add", {
         title: "Writing Area",
     });
+    }
+    else res.redirect("/");
 });
 
 router.post("/add", (req, res) => {
@@ -169,18 +185,30 @@ router.get("/read/:id", (req, res) => {
 
 router.get("/delete/:id", (req, res) => {
     let articleId = req.params.id;
-    let query = "DELETE FROM `articles` WHERE id = '" + articleId + "' ";
-    database.query(query, (err, result) => {
-        if (err) {
-            throw err;
-        }
-        if (result.affectedRows == 0) {
-            res.render("articleNotFound", {
-                title: "no such article"
+    if (req.session.loggedIn) {
+        let query = "SELECT * FROM `articles` WHERE id = ?";
+        database.query(query,[articleId], (err, result) => {
+            if (err) {
+                throw err;
+            }
+            if (result[0].author == req.session.username) {
+                let query = "DELETE FROM `articles` WHERE id = '" + articleId + "' ";
+                database.query(query, (err, result) => {
+                if (err) {
+                    throw err;
+                }
+                if (result.affectedRows == 0) {
+                    res.render("articleNotFound", {
+                        title: "no such article"
+                    });
+                }
+                res.redirect("/articles");
+                });
+            }
+            else res.redirect("/articles");
             });
-        }
-        res.redirect("/");
-    });
+    }
+    else res.redirect ("/");
 });
 
 router.get("/logout", (req,res) => {
@@ -190,21 +218,33 @@ router.get("/logout", (req,res) => {
 
 router.get("/edit/:id", (req, res) => {
     let articleId = req.params.id;
-    let query = "SELECT * FROM `articles` WHERE id = '" + articleId + "';";
-    database.query(query, (err, result) => {
-        if (err) {
-            throw err;
-        }
-        if (result.affectedRows == 0) {
-            res.render("articleNotFound", {
-                title: "no such article"
+    if (req.session.loggedIn) {
+        let query = "SELECT * FROM `articles` WHERE id = ?";
+        database.query(query,[articleId], (err, result) => {
+            if (err) {
+                throw err;
+            }
+            if (result[0].author == req.session.username) {
+                let query = "SELECT * FROM `articles` WHERE id = '" + articleId + "';";
+                database.query(query, (err, result) => {
+                    if (err) {
+                        throw err;
+                    }
+                    if (result.affectedRows == 0) {
+                        res.render("articleNotFound", {
+                            title: "no such article"
+                        });
+                    }
+                    res.render("editArticle", {
+                        title: result[0].title,
+                        data: result[0],
+                    });
+                });
+            }
+            else res.redirect("/articles");
             });
-        }
-        res.render("editArticle", {
-            title: result[0].title,
-            data: result[0],
-        });
-    });
+    }
+    else res.redirect ("/");
 });
 
 router.post("/edit/:id", (req, res) => {
