@@ -2,18 +2,28 @@ version: '2.1'
 
 services:
   db:
-    image: mysql:8.0.18
+    image: mysql:5.7
+    ports:
+      - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql
+      - ./sql-dump:/docker-entrypoint-initdb.d/
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: 123456
       MYSQL_DATABASE: mydb
-      MYSQL_USER: root
+      MYSQL_USER: blog
+      MYSQL_PASSWORD: 123456
+    command: mysqld --sql_mode="" --character-set-server=utf8 --collation-server=utf8_turkish_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 10
   web:
     build: .
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       NODE_ENV: production
     ports:
