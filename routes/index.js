@@ -1,6 +1,5 @@
 const express = require('express');
 const{body, validationResult} = require('express-validator');
-
 const router = express.Router();
 
 router.get("/" ,(req, res) => {
@@ -170,7 +169,10 @@ router.get("/read/:id", (req, res) => {
         if (err) {
             throw err;
         }
-        if (result[0].author == req.session.username) {
+        if (result.length == 0) {
+            res.sendStatus(404);
+        }
+        else if (result[0].author == req.session.username) {
             res.render("readArticle", {
                 title: result[0].title,
                 data: result[0],
@@ -224,7 +226,10 @@ router.get("/edit/:id", (req, res) => {
             if (err) {
                 throw err;
             }
-            if (result[0].author == req.session.username) {
+            if (result.length == 0) {
+                res.sendStatus(404);
+            }
+            else if (result[0].author == req.session.username) {
                 let query = "SELECT * FROM `articles` WHERE id = '" + articleId + "';";
                 database.query(query, (err, result) => {
                     if (err) {

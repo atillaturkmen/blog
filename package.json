@@ -1,10 +1,11 @@
 {
   "name": "aa",
   "version": "1.0.0",
-  "description": "",
+  "description": "a simple blog",
   "main": "demo.js",
   "scripts": {
-    "watch": "nodemon ./demo.js"
+  "start": "node demo.js",
+  "watch": "nodemon ./demo.js"
   },
   "author": "Atilla",
   "license": "ISC",
