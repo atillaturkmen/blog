@@ -22,7 +22,7 @@ app.set('view engine', 'pug');
 const database = mysql.createConnection({
     host: "localhost",
     user: "root",
-    password: "123456",
+    password: "password",
     database: "mydb",
 });
 
