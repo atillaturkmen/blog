@@ -1,0 +1,22 @@
+version: '2.1'
+
+services:
+  db:
+    image: mysql:8.0.18
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: mydb
+      MYSQL_USER: root
+  web:
+    build: .
+    depends_on:
+      - db
+    environment:
+      NODE_ENV: production
+    ports:
+      - 3000:3000
+volumes:
+  db_data:

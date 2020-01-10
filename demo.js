@@ -20,9 +20,9 @@ app.set('view engine', 'pug');
 //const {getHomePage, writingPageRender, submitContent, readArticle, deleteArticle, getArticles, getRegistration, submitRegistration, logout} = require("./routes/index");
 
 const database = mysql.createConnection({
-    host: "localhost",
+    host: "db",
     user: "root",
-    password: "password",
+    password: "123456",
     database: "mydb",
 });
 
