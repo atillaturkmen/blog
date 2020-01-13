@@ -1,15 +1,17 @@
 extends layout
 
 block content
-    br
-    br
-    br
-    br
-    .alert.alert-success(role='alert') Registration is succesful. You will be redirected to homepage in 3 seconds.
-        br
-        br
-        a.alert-link(href='/')  < Click here to go back to homepage if you feel impatient.
-    script.
-        setTimeout(function(){
-        window.location.href = '/';
-        }, 3000);
+    body
+        div.container
+            br
+            br
+            br
+            br
+            .alert.alert-success(role='alert') Registration is succesful. You will be redirected to homepage in 3 seconds.
+                br
+                br
+                a.alert-link(href='/')  < Click here to go back to homepage if you feel impatient.
+            script.
+                setTimeout(function(){
+                window.location.href = '/';
+                }, 3000);
