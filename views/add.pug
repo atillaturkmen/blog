@@ -1,8 +1,8 @@
 extends layout
 
 block content
-        link(href='https://cdn.jsdelivr.net/npm/froala-editor@3.0.6/css/froala_editor.pkgd.min.css', rel='stylesheet', type='text/css')
-        script(type='text/javascript', src='https://cdn.jsdelivr.net/npm/froala-editor@3.0.6/js/froala_editor.pkgd.min.js')
+        link(href='/public/froala_editor_3.0.6/css/froala_editor.pkgd.min.css', rel='stylesheet', type='text/css')
+        script(type='text/javascript', src='/public/froala_editor_3.0.6/js/froala_editor.pkgd.min.js')
         body
             div.container
                 br
@@ -26,6 +26,8 @@ block content
                         textarea#content(rows="12", cols="135", name="content", placeholder="Write here", required)
                     button.btn.btn-primary.float-right(type='submit') Submit 
                         i.fa.fa-share-square-o
+                    br
+                    br
 
                 script.
                     let summary = new FroalaEditor('textarea#summary', {
