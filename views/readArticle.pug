@@ -6,12 +6,12 @@ block content
             .jumbotron.text-center
                 h1.display-3.text-center= data.title
                 br
-                a.btn.btn-secondary.float-left(href='/', style='margin-right:20px;')  
+                a.button.btn.btn-secondary.float-left(href='/', style='margin-right:20px;')  
                     i.fa.fa-home
-                a.button.btn.float-left(href=`/delete/${data.id}`, style='margin-right:20px;', onclick="return confirm('Do you confirm to delete this article?')")
-                    i.fa.fa-trash
                 a.button.btn.float-left(href=`/edit/${data.id}`, style='margin-right:20px;')
                     i.fa.fa-pencil
+                a.button.btn.float-left.text-danger(href=`/delete/${data.id}`, style='margin-right:20px;', onclick="return confirm('Do you confirm to delete this article?')")
+                    i.fa.fa-trash
                 p.float-right= `Written at: ${data.date_established}`
             br
             blockquote.blockquote
