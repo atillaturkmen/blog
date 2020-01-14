@@ -54,51 +54,7 @@ block content
                                         a.btn.btn-secondary(href=`/read/${article.id}`) Continue reading 
                                             i.fa.fa-book
                         br
-                ul.pagination.justify-content-center
-                    if currentPage == 1
-                        li.page-item.disabled
-                            a.page-link
-                                i.fa.fa-angle-double-left
-                        each num in [+currentPage, +currentPage + 1, +currentPage + 2]
-                            if currentPage == num
-                                li.page-item.active(aria-current='page')
-                                    a.page-link()= num
-                            else
-                                li.page-item
-                                    a.page-link(href=`/articles/${+num}`)= num
-                        li.page-item
-                            a.page-link(href=`/articles/${+maxPageCount}`)
-                                i.fa.fa-angle-double-right
-                    else if currentPage == maxPageCount
-                        li.page-item
-                            a.page-link(href=`/articles/1`)
-                                i.fa.fa-angle-double-left
-                        each num in [currentPage - 2, +currentPage - 1, +currentPage]
-                            if currentPage == num
-                                li.page-item.active(aria-current='page')
-                                    a.page-link()= num
-                            else
-                                li.page-item
-                                    a.page-link(href=`/articles/${+num}`)= num
-                        li.page-item.disabled
-                            a.page-link()
-                                i.fa.fa-angle-double-right
-                    else
-                        li.page-item
-                            a.page-link(href=`/articles/1`)
-                                i.fa.fa-angle-double-left
-                        each num in [+currentPage - 1, +currentPage, +currentPage + 1]
-                            if currentPage == num
-                                li.page-item.active(aria-current='page')
-                                    a.page-link()= num
-                            else
-                                li.page-item
-                                    a.page-link(href=`/articles/${+num}`)= num
-                        li.page-item
-                            a.page-link(href=`/articles/${+maxPageCount}`)
-                                i.fa.fa-angle-double-right
-                    
-
+                        br
             else
                 br
                 p No contribitions yet :(
