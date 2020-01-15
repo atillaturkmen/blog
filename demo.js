@@ -1,6 +1,6 @@
 const mysql = require("mysql");
-const express = require ("express");
-const bodyParser = require ("body-parser");
+const express = require("express");
+const bodyParser = require("body-parser");
 const session = require("express-session");
 const path = require('path');
 const routes = require("./routes/index");
@@ -16,7 +16,9 @@ app.use(session({
 }));
 
 app.use('/public', express.static(path.join(__dirname, 'public')));
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({
+    extended: true
+}));
 app.set('view engine', 'pug');
 
 //const {getHomePage, writingPageRender, submitContent, readArticle, deleteArticle, getArticles, getRegistration, submitRegistration, logout} = require("./routes/index");
@@ -28,7 +30,7 @@ const database = mysql.createConnection({
     database: "mydb",
 });
 
-database.connect(function(err) {
+database.connect(function (err) {
     if (err) throw err;
     console.log("Database connected");
 });

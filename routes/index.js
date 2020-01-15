@@ -1,9 +1,14 @@
 const express = require('express');
-const{body, validationResult} = require('express-validator');
+const {
+    body,
+    validationResult
+} = require('express-validator');
 const router = express.Router();
 const NodeCache = require('node-cache');
 
-const cache = new NodeCache({ stdTTL: 5 * 60 });
+const cache = new NodeCache({
+    stdTTL: 5 * 60
+});
 
 
 const usernameQuery = "SELECT * FROM `users` WHERE user_name = ?";
@@ -23,13 +28,13 @@ const commentDeleteQuery = "DELETE FROM `comments` WHERE comment_id = ?";
 const commentDeleteByArticleQuery = "DELETE FROM `comments` WHERE article_id = ?";
 
 
-router.get("/" ,(req, res) => {
-        res.redirect("/articles");
+router.get("/", (req, res) => {
+    res.redirect("/articles");
 });
 
 router.get("/login", (req, res) => {
     res.render("homepage", {
-    title: "Homepage",
+        title: "Homepage",
     });
 });
 
@@ -44,8 +49,7 @@ router.post("/login", (req, res) => {
             req.session.loggedIn = 1;
             req.session.username = username;
             res.redirect("/articles");
-        }
-        else {
+        } else {
             res.render("wrongPasswordPage", {
                 title: "Homepage"
             });
@@ -64,21 +68,21 @@ router.get("/articles/:id", (req, res) => {
     }
     let articleCacheKey = req.protocol + '://' + req.headers.host + req.originalUrl;
     database.query(articleNumberQuery, (err, result) => {
-         if (err) {
-             throw err;
+        if (err) {
+            throw err;
         }
         let articleCount = Object.values(result[0])[0];
-        let maxPageCount = Math.ceil(articleCount/10);
+        let maxPageCount = Math.ceil(articleCount / 10);
         let articleCache = cache.get(articleCacheKey);
         let render = function (result) {
-        articleBefore(result);
-        res.render("articles", {
-            title: "Articles",
-            data: result,
-            user: req.session.username,
-            currentPage: currentPage,
-            maxPageCount: maxPageCount,
-            loggedIn:req.session.loggedIn,
+            articleBefore(result);
+            res.render("articles", {
+                title: "Articles",
+                data: result,
+                user: req.session.username,
+                currentPage: currentPage,
+                maxPageCount: maxPageCount,
+                loggedIn: req.session.loggedIn,
             });
         };
         if (articleCache) {
@@ -107,14 +111,13 @@ router.post("/articles/:id", (req, res) => {
             data: result,
             user: req.session.username,
             keyword: search,
-            loggedIn:req.session.loggedIn,
+            loggedIn: req.session.loggedIn,
         });
     };
     if (articleSearchCache) {
         console.log(`${articleSearchCacheKey} cache'den geldi`);
         render(articleSearchCache);
-    }
-    else database.query(articleSearchQuery, ['%'+search+'%', '%'+search+'%', '%'+search+'%', '%'+search+'%'], (err, result) => {
+    } else database.query(articleSearchQuery, ['%' + search + '%', '%' + search + '%', '%' + search + '%', '%' + search + '%'], (err, result) => {
         if (err) {
             return res.status(500).send(err);
         }
@@ -130,8 +133,10 @@ router.get("/registration", (req, res) => {
 });
 
 router.post("/registration", [
-    body("newpassword")
-        .isLength({min: 6})
+        body("newpassword")
+        .isLength({
+            min: 6
+        })
         .withMessage("Your password must be at least 6 characters long."),
     ],
     (req, res) => {
@@ -139,7 +144,7 @@ router.post("/registration", [
         if (errors.isEmpty()) {
             let username = req.body.newusername;
             let password = req.body.newpassword;
-            database.query(usernameQuery,[username], (err, result) => {
+            database.query(usernameQuery, [username], (err, result) => {
                 if (err) {
                     return res.status(500).send(err);
                 }
@@ -147,9 +152,8 @@ router.post("/registration", [
                     res.render("sameUserName", {
                         title: "Sign up"
                     });
-                }
-                else {
-                    database.query(userInsertQuery,[username, password], (err, result) => {
+                } else {
+                    database.query(userInsertQuery, [username, password], (err, result) => {
                         if (err) {
                             return res.status(500).send(err);
                         }
@@ -159,8 +163,7 @@ router.post("/registration", [
                     });
                 }
             });
-        }
-        else {
+        } else {
             res.render("registration", {
                 title: "Sign up",
                 errors: errors.array(),
@@ -172,10 +175,9 @@ router.post("/registration", [
 router.get("/add", (req, res) => {
     if (req.session.loggedIn) {
         res.render("add", {
-        title: "Writing Area",
-    });
-    }
-    else res.redirect("/");
+            title: "Writing Area",
+        });
+    } else res.redirect("/");
 });
 
 router.post("/add", (req, res) => {
@@ -198,7 +200,7 @@ router.post("/add", (req, res) => {
 
 router.get("/read/:id", (req, res) => {
     let articleId = req.params.id;
-    database.query(articleSelectQuery,[articleId], (err, result) => {
+    database.query(articleSelectQuery, [articleId], (err, result) => {
         if (err) {
             throw err;
         }
@@ -243,58 +245,52 @@ router.get("/delete/:id", (req, res) => {
             if (result.length == 0) {
                 res.render("articleNotFound", {
                     title: "no such article"
-                }); 
-            }
-            else if (result[0].author == req.session.username) {
-                database.query(articleDeleteQuery, [''+articleId+''], (err, result) => {
-                if (err) {
-                    throw err;
-                }
-                database.query(commentDeleteByArticleQuery, [articleId], (req, res) => {
+                });
+            } else if (result[0].author == req.session.username) {
+                database.query(articleDeleteQuery, ['' + articleId + ''], (err, result) => {
                     if (err) {
                         throw err;
                     }
+                    database.query(commentDeleteByArticleQuery, [articleId], (req, res) => {
+                        if (err) {
+                            throw err;
+                        }
+                    });
+                    cache.flushAll();
+                    res.redirect("/articles");
                 });
-                cache.flushAll();
-                res.redirect("/articles");
-                });
-            }
-            else res.redirect("/articles");
-            });
-    }
-    else res.redirect ("/");
+            } else res.redirect("/articles");
+        });
+    } else res.redirect("/");
 });
 
 router.get("/commentdelete/:id", (req, res) => {
     let commentId = req.params.id;
     let backURL = req.header('Referer') || '/';
     if (req.session.loggedIn) {
-        database.query(commentSelectByIdQuery, [''+commentId+''], (err, result) => {
+        database.query(commentSelectByIdQuery, ['' + commentId + ''], (err, result) => {
             if (err) {
                 throw err;
             }
             if (result.length == 0) {
                 res.send("the comment you tried to delete does not exist");
-            }
-            else if (result[0].author == req.session.username) {
-                database.query(commentDeleteQuery, [''+commentId+''], (err, result) => {
-                if (err) {
-                    throw err;
-                }
-                if (result.affectedRows == 0) {
-                    res.send("the comment you tried to delete does not exist");
-                }
-                cache.flushAll();
-                res.redirect(backURL);
+            } else if (result[0].author == req.session.username) {
+                database.query(commentDeleteQuery, ['' + commentId + ''], (err, result) => {
+                    if (err) {
+                        throw err;
+                    }
+                    if (result.affectedRows == 0) {
+                        res.send("the comment you tried to delete does not exist");
+                    }
+                    cache.flushAll();
+                    res.redirect(backURL);
                 });
-            }
-            else res.redirect(backURL);
-            });
-    }
-    else res.redirect ("/");
+            } else res.redirect(backURL);
+        });
+    } else res.redirect("/");
 });
 
-router.get("/logout", (req,res) => {
+router.get("/logout", (req, res) => {
     req.session.loggedIn = 0;
     req.session.username = "visitor";
     res.redirect("/");
@@ -303,14 +299,13 @@ router.get("/logout", (req,res) => {
 router.get("/edit/:id", (req, res) => {
     let articleId = req.params.id;
     if (req.session.loggedIn) {
-        database.query(articleSelectQuery,[articleId], (err, result) => {
+        database.query(articleSelectQuery, [articleId], (err, result) => {
             if (err) {
                 throw err;
             }
             if (result.length == 0) {
                 res.sendStatus(404);
-            }
-            else if (result[0].author == req.session.username) {
+            } else if (result[0].author == req.session.username) {
                 if (err) {
                     throw err;
                 }
@@ -323,11 +318,9 @@ router.get("/edit/:id", (req, res) => {
                     title: result[0].title,
                     data: result[0],
                 });
-            }
-            else res.redirect("/articles");
-            });
-    }
-    else res.redirect ("/");
+            } else res.redirect("/articles");
+        });
+    } else res.redirect("/");
 });
 
 router.post("/edit/:id", (req, res) => {
@@ -363,7 +356,7 @@ router.get("/stress/:id", (req, res) => {
     res.redirect("/articles");
 });
 
-router.get("/purge", (req,res) => {
+router.get("/purge", (req, res) => {
     let before = Date.now();
     database.query("DELETE FROM `articles`;");
     database.query("DELETE FROM `comments`;");
@@ -374,16 +367,21 @@ router.get("/purge", (req,res) => {
 });
 
 
-function articleBefore (result) {
+function articleBefore(result) {
     let lastUpdated;
     result.forEach(element => {
         lastUpdated = element.last_updated;
         let now = new Date();
         let fark = now - lastUpdated;
-        if (fark < 60000) {lastUpdated = `${Math.round(fark/1000)} seconds ago`;}
-        else if (fark < 3600000) {lastUpdated = `${Math.round(fark/60000)} minutes ago`;}
-        else if (fark < 86400000) {lastUpdated = `${Math.round(fark/3600000)} hours ago`;}
-        else {lastUpdated = `${Math.round(fark/86400000)} days ago`;}
+        if (fark < 60000) {
+            lastUpdated = `${Math.round(fark/1000)} seconds ago`;
+        } else if (fark < 3600000) {
+            lastUpdated = `${Math.round(fark/60000)} minutes ago`;
+        } else if (fark < 86400000) {
+            lastUpdated = `${Math.round(fark/3600000)} hours ago`;
+        } else {
+            lastUpdated = `${Math.round(fark/86400000)} days ago`;
+        }
         element.before = lastUpdated;
     });
 }
