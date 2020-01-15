@@ -16,10 +16,11 @@ const articleInsertQuery = "INSERT INTO `articles` (author, content, summary, ti
 const articleSelectQuery = "SELECT * FROM `articles` WHERE id = ?";
 const articleEditQuery = "UPDATE `articles` SET author = ?, content = ?, summary = ?, title = ?, last_updated = NOW() WHERE id = ?;";
 const articleDeleteQuery = "DELETE FROM `articles` WHERE id = ?";
-const commentSelectByArticleQuery = "SELECT * FROM `comments` WHERE article = ?";
+const commentSelectByArticleQuery = "SELECT * FROM `comments` WHERE article_id = ?";
 const commentSelectByIdQuery = "SELECT * FROM `comments` WHERE comment_id = ?";
-const commentInsertQuery = "INSERT INTO `comments` (comment, author, article, written_at) VALUES (?, ?, ?, NOW())";
-const commentDeleteQuery = "DELETE FROM `comments` WHERE id = ?";
+const commentInsertQuery = "INSERT INTO `comments` (comment, author, article, written_at, article_id) VALUES (?, ?, ?, NOW(), ?)";
+const commentDeleteQuery = "DELETE FROM `comments` WHERE comment_id = ?";
+const commentDeleteByArticleQuery = "DELETE FROM `comments` WHERE article_id = ?";
 
 
 router.get("/" ,(req, res) => {
@@ -61,70 +62,64 @@ router.get("/articles/:id", (req, res) => {
     if (!req.session.username) {
         req.session.username = "visitor";
     }
-    const articleCacheKey = req.protocol + '://' + req.headers.host + req.originalUrl;
+    let articleCacheKey = req.protocol + '://' + req.headers.host + req.originalUrl;
     database.query(articleNumberQuery, (err, result) => {
          if (err) {
              throw err;
         }
         let articleCount = Object.values(result[0])[0];
         let maxPageCount = Math.ceil(articleCount/10);
-        const articleCache = cache.get(articleCacheKey);
+        let articleCache = cache.get(articleCacheKey);
+        let render = function (result) {
+        articleBefore(result);
+        res.render("articles", {
+            title: "Articles",
+            data: result,
+            user: req.session.username,
+            currentPage: currentPage,
+            maxPageCount: maxPageCount,
+            loggedIn:req.session.loggedIn,
+            });
+        };
         if (articleCache) {
             console.log(`${articleCacheKey} cache'den geldi`);
-            res.render("articles", {
-                title: "Articles",
-                data: articleCache,
-                user: req.session.username,
-                currentPage: currentPage,
-                maxPageCount: maxPageCount,
-                loggedIn:req.session.loggedIn,
+            render(articleCache);
+        } else {
+            database.query(articleListQuery, [(+currentPage - 1) * 10, 10], (err, result) => {
+                if (err) {
+                    throw err;
+                }
+                cache.set(articleCacheKey, result);
+                render(result);
             });
-          }
-        else database.query(articleListQuery, [(+currentPage - 1) * 10, 10], (err, result) => {
-            if (err) {
-                throw (err);
-            }
-            articleBefore(result);
-            cache.set(articleCacheKey, result);
-            res.render("articles", {
-                title: "Articles",
-                data: result,
-                user: req.session.username,
-                currentPage: currentPage,
-                maxPageCount: maxPageCount,
-                loggedIn:req.session.loggedIn,
-            });
-        });
+        }
     });
 });
 
 router.post("/articles/:id", (req, res) => {
     let search = req.body.search;
-    const articleSearchCacheKey = req.protocol + '://' + req.headers.host + req.originalUrl + search;
-    const articleSearchCache = cache.get(articleSearchCacheKey);
-    if (articleSearchCache) {
-        console.log(`${articleSearchCacheKey} cache'den geldi`);
-        res.render("searchResults", {
-            title: "Search Results",
-            data: articleSearchCache,
-            user: req.session.username,
-            keyword: search,
-            loggedIn:req.session.loggedIn,
-        });
-    }
-    else database.query(articleSearchQuery, ['%'+search+'%', '%'+search+'%', '%'+search+'%', '%'+search+'%', ], (err, result) => {
-        if (err) {
-            return res.status(500).send(err);
-        }
+    let articleSearchCacheKey = req.protocol + '://' + req.headers.host + req.originalUrl + search;
+    let articleSearchCache = cache.get(articleSearchCacheKey);
+    let render = function (result) {
         articleBefore(result);
-        cache.set(articleSearchCacheKey, result);
         res.render("searchResults", {
             title: "Search Results",
             data: result,
             user: req.session.username,
             keyword: search,
-            loggedIn: req.session.loggedIn,
+            loggedIn:req.session.loggedIn,
         });
+    };
+    if (articleSearchCache) {
+        console.log(`${articleSearchCacheKey} cache'den geldi`);
+        render(articleSearchCache);
+    }
+    else database.query(articleSearchQuery, ['%'+search+'%', '%'+search+'%', '%'+search+'%', '%'+search+'%'], (err, result) => {
+        if (err) {
+            return res.status(500).send(err);
+        }
+        cache.set(articleSearchCacheKey, result);
+        render(result);
     });
 });
 
@@ -140,7 +135,7 @@ router.post("/registration", [
         .withMessage("Your password must be at least 6 characters long."),
     ],
     (req, res) => {
-        const errors = validationResult(req);
+        let errors = validationResult(req);
         if (errors.isEmpty()) {
             let username = req.body.newusername;
             let password = req.body.newpassword;
@@ -210,7 +205,7 @@ router.get("/read/:id", (req, res) => {
         if (result.length == 0) {
             res.sendStatus(404);
         }
-        database.query(commentSelectByArticleQuery, [result[0].title], (err, commentResult) => {
+        database.query(commentSelectByArticleQuery, [result[0].id], (err, commentResult) => {
             if (err) {
                 throw err;
             }
@@ -229,7 +224,8 @@ router.post("/read/:id", (req, res) => {
     let comment = req.body.comment;
     let author = req.session.username;
     let article = req.body.title;
-    database.query(commentInsertQuery, [comment, author, article], (err, result) => {
+    let articleId = req.params.id;
+    database.query(commentInsertQuery, [comment, author, article, articleId], (err, result) => {
         if (err) {
             throw err;
         }
@@ -240,7 +236,7 @@ router.post("/read/:id", (req, res) => {
 router.get("/delete/:id", (req, res) => {
     let articleId = req.params.id;
     if (req.session.loggedIn) {
-        database.query(articleSelectQuery,[articleId], (err, result) => {
+        database.query(articleSelectQuery, [articleId], (err, result) => {
             if (err) {
                 throw err;
             }
@@ -254,11 +250,11 @@ router.get("/delete/:id", (req, res) => {
                 if (err) {
                     throw err;
                 }
-                if (result.affectedRows == 0) {
-                    res.render("articleNotFound", {
-                        title: "no such article"
-                    });
-                }
+                database.query(commentDeleteByArticleQuery, [articleId], (req, res) => {
+                    if (err) {
+                        throw err;
+                    }
+                });
                 cache.flushAll();
                 res.redirect("/articles");
                 });
@@ -271,13 +267,12 @@ router.get("/delete/:id", (req, res) => {
 
 router.get("/commentdelete/:id", (req, res) => {
     let commentId = req.params.id;
-    backURL=req.header('Referer') || '/';
+    let backURL = req.header('Referer') || '/';
     if (req.session.loggedIn) {
         database.query(commentSelectByIdQuery, [''+commentId+''], (err, result) => {
             if (err) {
                 throw err;
             }
-            console.log(result);
             if (result.length == 0) {
                 res.send("the comment you tried to delete does not exist");
             }
@@ -316,19 +311,17 @@ router.get("/edit/:id", (req, res) => {
                 res.sendStatus(404);
             }
             else if (result[0].author == req.session.username) {
-                database.query(articleSelectquery, [''+articleId+''], (err, result) => {
-                    if (err) {
-                        throw err;
-                    }
-                    if (result.affectedRows == 0) {
-                        res.render("articleNotFound", {
-                            title: "no such article"
-                        });
-                    }
-                    res.render("editArticle", {
-                        title: result[0].title,
-                        data: result[0],
+                if (err) {
+                    throw err;
+                }
+                if (result.affectedRows == 0) {
+                    res.render("articleNotFound", {
+                        title: "no such article"
                     });
+                }
+                res.render("editArticle", {
+                    title: result[0].title,
+                    data: result[0],
                 });
             }
             else res.redirect("/articles");
@@ -345,7 +338,7 @@ router.post("/edit/:id", (req, res) => {
     if (!req.session.username) {
         req.session.username = "anonymus";
     }
-    database.query(articleEditQuery, [req.session.username, content, summary, title, ''+articleId+''], (err) => {
+    database.query(articleEditQuery, [req.session.username, content, summary, title, articleId], (err) => {
         if (err) {
             throw err;
         }
@@ -366,17 +359,18 @@ router.get("/stress/:id", (req, res) => {
     }
     let after = Date.now();
     console.log(`${req.params.id} yazıyı database'e yazmak: ${+after - +before} ms`);
-    res.redirect("/articles");
     cache.flushAll();
+    res.redirect("/articles");
 });
 
 router.get("/purge", (req,res) => {
     let before = Date.now();
     database.query("DELETE FROM `articles`;");
+    database.query("DELETE FROM `comments`;");
     let after = Date.now();
     console.log(`her şeyi database'den silmek: ${after - before} ms`);
-    res.redirect("/");
     cache.flushAll();
+    res.redirect("/");
 });
 
 
