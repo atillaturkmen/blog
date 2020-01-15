@@ -1,6 +1,25 @@
 const express = require('express');
 const{body, validationResult} = require('express-validator');
 const router = express.Router();
+const NodeCache = require('node-cache');
+
+const cache = new NodeCache({ stdTTL: 5 * 60 });
+
+
+const usernameQuery = "SELECT * FROM `users` WHERE user_name = ?";
+const usernamePasswordQuery = "SELECT * FROM `users` WHERE user_name = ? AND password = ?";
+const userInsertQuery = "INSERT INTO `users` (user_name, password) VALUES (?, ?)";
+const articleNumberQuery = "SELECT COUNT(*) FROM `articles`;";
+const articleListQuery = "SELECT * FROM `articles` ORDER BY id DESC LIMIT ?, ?;";
+const articleSearchQuery = "SELECT * FROM `articles` WHERE (title LIKE ? OR summary LIKE ? OR content LIKE ? OR author LIKE ?) ORDER BY id DESC;";
+const articleInsertQuery = "INSERT INTO `articles` (author, content, summary, title, date_established, last_updated) VALUES (?, ?, ?, ?, NOW(), NOW())";
+const articleSelectQuery = "SELECT * FROM `articles` WHERE id = ?";
+const articleDeleteQuery = "DELETE FROM `articles` WHERE id = ?";
+const commentSelectByArticleQuery = "SELECT * FROM `comments` WHERE article = ?";
+const commentSelectByIdQuery = "SELECT * FROM `comments` WHERE comment_id = ?";
+const commentInsertQuery = "INSERT INTO `comments` (comment, author, article, written_at) VALUES (?, ?, ?, NOW())";
+const commentDeleteQuery = "DELETE FROM `comments` WHERE id = ?";
+const articleEditQuery = "UPDATE `articles` SET author = ?, content = ?, summary = ?, title = ?, last_updated = NOW() WHERE id = ?;";
 
 
 router.get("/" ,(req, res) => {
@@ -16,8 +35,7 @@ router.get("/login", (req, res) => {
 router.post("/login", (req, res) => {
     let username = req.body.username;
     let password = req.body.password;
-    let usernameQuery = "SELECT * FROM `users` WHERE user_name = ? AND password = ?";
-    database.query(usernameQuery, [username, password], (err, result) => {
+    database.query(usernamePasswordQuery, [username, password], (err, result) => {
         if (err) {
             return res.status(500).send(err);
         }
@@ -40,7 +58,6 @@ router.get("/articles", (req, res) => {
 
 router.get("/articles/:id", (req, res) => {
     let currentPage = req.params.id;
-    let articleNumberQuery = "SELECT COUNT(*) FROM `articles`;";
     if (!req.session.username) {
         req.session.username = "visitor";
     }
@@ -50,8 +67,7 @@ router.get("/articles/:id", (req, res) => {
         }
         let articleCount = Object.values(result[0])[0];
         let maxPageCount = Math.ceil(articleCount/10);
-        let query = "SELECT * FROM `articles` ORDER BY id DESC LIMIT ?, ?;";
-        database.query(query, [(+currentPage - 1) * 10, 10], (err, result) => {
+        database.query(articleListQuery, [(+currentPage - 1) * 10, 10], (err, result) => {
             if (err) {
                 throw (err);
             }
@@ -70,8 +86,7 @@ router.get("/articles/:id", (req, res) => {
 
 router.post("/articles/:id", (req, res) => {
     let search = req.body.search;
-    let query = "SELECT * FROM `articles` WHERE (title LIKE '%"+search+"%' OR summary LIKE '%"+search+"%' OR content LIKE '%"+search+"%' OR author LIKE '%"+search+"%') ORDER BY id DESC;";
-    database.query(query, (err, result) => {
+    database.query(articleSearchQuery, ['%'+search+'%', '%'+search+'%', '%'+search+'%', '%'+search+'%', ], (err, result) => {
         if (err) {
             return res.status(500).send(err);
         }
@@ -102,7 +117,6 @@ router.post("/registration", [
         if (errors.isEmpty()) {
             let username = req.body.newusername;
             let password = req.body.newpassword;
-            let usernameQuery = "SELECT * FROM `users` WHERE user_name = ?";
             database.query(usernameQuery,[username], (err, result) => {
                 if (err) {
                     return res.status(500).send(err);
@@ -113,8 +127,7 @@ router.post("/registration", [
                     });
                 }
                 else {
-                    let query = "INSERT INTO `users` (user_name, password) VALUES (?, ?)";
-                    database.query(query,[username, password], (err, result) => {
+                    database.query(userInsertQuery,[username, password], (err, result) => {
                         if (err) {
                             return res.status(500).send(err);
                         }
@@ -147,11 +160,10 @@ router.post("/add", (req, res) => {
     let content = req.body.content;
     let title = req.body.title;
     let summary = req.body.summary;
-    let query = "INSERT INTO `articles` (author, content, summary, title, date_established, last_updated) VALUES (?, ?, ?, ?, NOW(), NOW())";
     if (!req.session.username) {
         req.session.username = "anonymus";
     }
-    database.query(query, [req.session.username, content, summary, title], (err) => {
+    database.query(articleInsertQuery, [req.session.username, content, summary, title], (err) => {
         if (err) {
             throw err;
         }
@@ -163,16 +175,14 @@ router.post("/add", (req, res) => {
 
 router.get("/read/:id", (req, res) => {
     let articleId = req.params.id;
-    let query = "SELECT * FROM `articles` WHERE id = ?";
-    database.query(query,[articleId], (err, result) => {
+    database.query(articleSelectQuery,[articleId], (err, result) => {
         if (err) {
             throw err;
         }
         if (result.length == 0) {
             res.sendStatus(404);
         }
-        let commentquery = "SELECT * FROM `comments` WHERE article = ?";
-        database.query(commentquery, [result[0].title], (err, commentResult) => {
+        database.query(commentSelectByArticleQuery, [result[0].title], (err, commentResult) => {
             if (err) {
                 throw err;
             }
@@ -191,8 +201,7 @@ router.post("/read/:id", (req, res) => {
     let comment = req.body.comment;
     let author = req.session.username;
     let article = req.body.title;
-    let query = "INSERT INTO `comments` (comment, author, article, written_at) VALUES (?, ?, ?, NOW())";
-    database.query(query, [comment, author, article], (err, result) => {
+    database.query(commentInsertQuery, [comment, author, article], (err, result) => {
         if (err) {
             throw err;
         }
@@ -203,8 +212,7 @@ router.post("/read/:id", (req, res) => {
 router.get("/delete/:id", (req, res) => {
     let articleId = req.params.id;
     if (req.session.loggedIn) {
-        let query = "SELECT * FROM `articles` WHERE id = ?";
-        database.query(query,[articleId], (err, result) => {
+        database.query(articleSelectQuery,[articleId], (err, result) => {
             if (err) {
                 throw err;
             }
@@ -214,8 +222,7 @@ router.get("/delete/:id", (req, res) => {
                 }); 
             }
             else if (result[0].author == req.session.username) {
-                let query = "DELETE FROM `articles` WHERE id = '" + articleId + "' ";
-                database.query(query, (err, result) => {
+                database.query(articleDeleteQuery, [''+articleId+''], (err, result) => {
                 if (err) {
                     throw err;
                 }
@@ -237,8 +244,7 @@ router.get("/commentdelete/:id", (req, res) => {
     let commentId = req.params.id;
     backURL=req.header('Referer') || '/';
     if (req.session.loggedIn) {
-        let query = "SELECT * FROM `comments` WHERE comment_id = " + commentId + "";
-        database.query(query, (err, result) => {
+        database.query(commentSelectByIdQuery, [''+commentId+''], (err, result) => {
             if (err) {
                 throw err;
             }
@@ -247,8 +253,7 @@ router.get("/commentdelete/:id", (req, res) => {
                 res.send("the comment you tried to delete does not exist");
             }
             else if (result[0].author == req.session.username) {
-                let query = "DELETE FROM `comments` WHERE comment_id = " + commentId + " ";
-                database.query(query, (err, result) => {
+                database.query(commentDeleteQuery, [''+commentId+''], (err, result) => {
                 if (err) {
                     throw err;
                 }
@@ -273,8 +278,7 @@ router.get("/logout", (req,res) => {
 router.get("/edit/:id", (req, res) => {
     let articleId = req.params.id;
     if (req.session.loggedIn) {
-        let query = "SELECT * FROM `articles` WHERE id = ?";
-        database.query(query,[articleId], (err, result) => {
+        database.query(articleSelectQuery,[articleId], (err, result) => {
             if (err) {
                 throw err;
             }
@@ -282,8 +286,7 @@ router.get("/edit/:id", (req, res) => {
                 res.sendStatus(404);
             }
             else if (result[0].author == req.session.username) {
-                let query = "SELECT * FROM `articles` WHERE id = '" + articleId + "';";
-                database.query(query, (err, result) => {
+                database.query(articleSelectquery, [''+articleId+''], (err, result) => {
                     if (err) {
                         throw err;
                     }
@@ -309,11 +312,10 @@ router.post("/edit/:id", (req, res) => {
     let content = req.body.content;
     let title = req.body.title;
     let summary = req.body.summary;
-    let query = "UPDATE `articles` SET author = ?, content = ?, summary = ?, title = ?, last_updated = NOW() WHERE id = '" + articleId + "';";
     if (!req.session.username) {
         req.session.username = "anonymus";
     }
-    database.query(query, [req.session.username, content, summary, title], (err) => {
+    database.query(articleEditQuery, [req.session.username, content, summary, title, ''+articleId+''], (err) => {
         if (err) {
             throw err;
         }
@@ -324,12 +326,12 @@ router.post("/edit/:id", (req, res) => {
 });
 
 router.get("/stress/:id", (req, res) => {
-    let query = "INSERT INTO `articles` (author, content, summary, title, date_established, last_updated) VALUES (?, ?, ?, 'Lorem ipsum dolor sit amet', NOW(), NOW())";
+    let stressQuery = "INSERT INTO `articles` (author, content, summary, title, date_established, last_updated) VALUES (?, ?, ?, 'Lorem ipsum dolor sit amet', NOW(), NOW())";
     let content = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales.";
     let summary = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales.";
     let before = Date.now();
     for (let i = 0; i < +req.params.id; i++) {
-        database.query(query, ["test", content, summary]);
+        database.query(stressQuery, ["test", content, summary]);
     }
     let after = Date.now();
     console.log(`${req.params.id} yazıyı database'e yazmak: ${+after - +before} ms`);
