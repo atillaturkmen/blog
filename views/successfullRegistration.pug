@@ -7,11 +7,11 @@ block content
             br
             br
             br
-            .alert.alert-success(role='alert') Registration is succesful. You will be redirected to homepage in 3 seconds.
+            .alert.alert-success(role='alert') Registration is succesful. You will be redirected in 3 seconds.
                 br
                 br
-                a.alert-link(href='/')  < Click here to go back to homepage if you feel impatient.
+                a.alert-link(href='/login')  < Click here if you feel impatient.
             script.
                 setTimeout(function(){
-                window.location.href = '/';
+                window.location.href = '/login';
                 }, 3000);
