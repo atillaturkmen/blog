@@ -14,12 +14,12 @@ const articleListQuery = "SELECT * FROM `articles` ORDER BY id DESC LIMIT ?, ?;"
 const articleSearchQuery = "SELECT * FROM `articles` WHERE (title LIKE ? OR summary LIKE ? OR content LIKE ? OR author LIKE ?) ORDER BY id DESC;";
 const articleInsertQuery = "INSERT INTO `articles` (author, content, summary, title, date_established, last_updated) VALUES (?, ?, ?, ?, NOW(), NOW())";
 const articleSelectQuery = "SELECT * FROM `articles` WHERE id = ?";
+const articleEditQuery = "UPDATE `articles` SET author = ?, content = ?, summary = ?, title = ?, last_updated = NOW() WHERE id = ?;";
 const articleDeleteQuery = "DELETE FROM `articles` WHERE id = ?";
 const commentSelectByArticleQuery = "SELECT * FROM `comments` WHERE article = ?";
 const commentSelectByIdQuery = "SELECT * FROM `comments` WHERE comment_id = ?";
 const commentInsertQuery = "INSERT INTO `comments` (comment, author, article, written_at) VALUES (?, ?, ?, NOW())";
 const commentDeleteQuery = "DELETE FROM `comments` WHERE id = ?";
-const articleEditQuery = "UPDATE `articles` SET author = ?, content = ?, summary = ?, title = ?, last_updated = NOW() WHERE id = ?;";
 
 
 router.get("/" ,(req, res) => {
@@ -61,17 +61,31 @@ router.get("/articles/:id", (req, res) => {
     if (!req.session.username) {
         req.session.username = "visitor";
     }
+    const articleCacheKey = req.protocol + '://' + req.headers.host + req.originalUrl;
     database.query(articleNumberQuery, (err, result) => {
          if (err) {
              throw err;
         }
         let articleCount = Object.values(result[0])[0];
         let maxPageCount = Math.ceil(articleCount/10);
-        database.query(articleListQuery, [(+currentPage - 1) * 10, 10], (err, result) => {
+        const articleCache = cache.get(articleCacheKey);
+        if (articleCache) {
+            console.log(`${articleCacheKey} cache'den geldi`);
+            res.render("articles", {
+                title: "Articles",
+                data: articleCache,
+                user: req.session.username,
+                currentPage: currentPage,
+                maxPageCount: maxPageCount,
+                loggedIn:req.session.loggedIn,
+            });
+          }
+        else database.query(articleListQuery, [(+currentPage - 1) * 10, 10], (err, result) => {
             if (err) {
                 throw (err);
             }
             articleBefore(result);
+            cache.set(articleCacheKey, result);
             res.render("articles", {
                 title: "Articles",
                 data: result,
@@ -86,11 +100,24 @@ router.get("/articles/:id", (req, res) => {
 
 router.post("/articles/:id", (req, res) => {
     let search = req.body.search;
-    database.query(articleSearchQuery, ['%'+search+'%', '%'+search+'%', '%'+search+'%', '%'+search+'%', ], (err, result) => {
+    const articleSearchCacheKey = req.protocol + '://' + req.headers.host + req.originalUrl + search;
+    const articleSearchCache = cache.get(articleSearchCacheKey);
+    if (articleSearchCache) {
+        console.log(`${articleSearchCacheKey} cache'den geldi`);
+        res.render("searchResults", {
+            title: "Search Results",
+            data: articleSearchCache,
+            user: req.session.username,
+            keyword: search,
+            loggedIn:req.session.loggedIn,
+        });
+    }
+    else database.query(articleSearchQuery, ['%'+search+'%', '%'+search+'%', '%'+search+'%', '%'+search+'%', ], (err, result) => {
         if (err) {
             return res.status(500).send(err);
         }
         articleBefore(result);
+        cache.set(articleSearchCacheKey, result);
         res.render("searchResults", {
             title: "Search Results",
             data: result,
@@ -167,6 +194,7 @@ router.post("/add", (req, res) => {
         if (err) {
             throw err;
         }
+        cache.flushAll();
         res.render("articleAdded", {
             title: "Article added",
         });
@@ -231,6 +259,7 @@ router.get("/delete/:id", (req, res) => {
                         title: "no such article"
                     });
                 }
+                cache.flushAll();
                 res.redirect("/articles");
                 });
             }
@@ -260,6 +289,7 @@ router.get("/commentdelete/:id", (req, res) => {
                 if (result.affectedRows == 0) {
                     res.send("the comment you tried to delete does not exist");
                 }
+                cache.flushAll();
                 res.redirect(backURL);
                 });
             }
@@ -319,6 +349,7 @@ router.post("/edit/:id", (req, res) => {
         if (err) {
             throw err;
         }
+        cache.flushAll();
         res.render("articleEdited", {
             title: "Article edited",
         });
@@ -336,6 +367,7 @@ router.get("/stress/:id", (req, res) => {
     let after = Date.now();
     console.log(`${req.params.id} yazıyı database'e yazmak: ${+after - +before} ms`);
     res.redirect("/articles");
+    cache.flushAll();
 });
 
 router.get("/purge", (req,res) => {
@@ -344,6 +376,7 @@ router.get("/purge", (req,res) => {
     let after = Date.now();
     console.log(`her şeyi database'den silmek: ${after - before} ms`);
     res.redirect("/");
+    cache.flushAll();
 });
 
 

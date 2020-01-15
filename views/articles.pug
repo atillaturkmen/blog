@@ -5,19 +5,19 @@ block content
         div.container
             br
             h1 BLOG
-            if !loggedIn
-                a.btn.btn-primary.float-right(href="/login") Log in 
-                    i.fa.fa-sign-in
-                form#registration-form.form-inline.justify-content-center(action='', method='post' class="form-registration")
-                    input#search.form-control.col-md-6(type="search", placeholder="Search for an article or author", name="search", style="margin-right:15px;")
-                    button.btn.btn-outline-info(type="submit")
-                        i.fa.fa-search
-            else
+            if loggedIn
                 a.btn.btn-warning.float-right(href="/logout") Log out 
                     i.fa.fa-sign-out
                 a.btn.float-left.text-primary(href='/add', style='margin-right:200px;') Write something 
                     i.fa.fa-plus-circle
                 form#registration-form.form-inline(action='', method='post' class="form-registration")
+                    input#search.form-control.col-md-6(type="search", placeholder="Search for an article or author", name="search", style="margin-right:15px;")
+                    button.btn.btn-outline-info(type="submit")
+                        i.fa.fa-search
+            else
+                a.btn.btn-primary.float-right(href="/login") Log in 
+                    i.fa.fa-sign-in
+                form#registration-form.form-inline.justify-content-center(action='', method='post' class="form-registration")
                     input#search.form-control.col-md-6(type="search", placeholder="Search for an article or author", name="search", style="margin-right:15px;")
                     button.btn.btn-outline-info(type="submit")
                         i.fa.fa-search
