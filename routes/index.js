@@ -4,15 +4,16 @@ const router = express.Router();
 
 
 router.get("/" ,(req, res) => {
-    if (req.session.loggedIn) {
         res.redirect("/articles");
-    }
-    else {res.render("homepage", {
-        title: "Homepage",
-    });}
 });
 
-router.post("/", (req, res) => {
+router.get("/login", (req, res) => {
+    res.render("homepage", {
+    title: "Homepage",
+    });
+});
+
+router.post("/login", (req, res) => {
     let username = req.body.username;
     let password = req.body.password;
     let usernameQuery = "SELECT * FROM `users` WHERE user_name = ? AND password = ?";
@@ -38,64 +39,33 @@ router.get("/articles", (req, res) => {
 });
 
 router.get("/articles/:id", (req, res) => {
-    if (req.session.loggedIn) {
-        let currentPage = req.params.id;
-        let articleNumberQuery = "SELECT COUNT(*) FROM `articles`;";
-        database.query(articleNumberQuery, (err, result) => {
-            if (err) {
-                throw err;
-            }
-            let articleCount = Object.values(result[0])[0];
-            if (articleCount <= 10) {
-                let query = "SELECT * FROM `articles` ORDER BY id DESC;";
-                database.query(query, (err, result) => {
-                    if (err) {
-                        throw (err);
-                    }
-                    articleBefore(result);
-                    res.render("0-10_articles", {
-                        title: "Articles",
-                        data: result,
-                        user: req.session.username,
-                        currentPage: currentPage,
-                    });
-                });
-            }
-            else if (articleCount <= 20) {
-                let query = "SELECT * FROM `articles` ORDER BY id DESC LIMIT ?, ?;";
-                database.query(query, [(currentPage - 1) * 10, 10], (err, result) => {
-                    if (err) {
-                        throw (err);
-                    }
-                    articleBefore(result);
-                    res.render("10-20_articles", {
-                        title: "Articles",
-                        data: result,
-                        user: req.session.username,
-                        currentPage: currentPage,
-                    });
-                });
-            }
-            else {
-                let maxPageCount = Math.ceil(articleCount/10);
-                let query = "SELECT * FROM `articles` ORDER BY id DESC LIMIT ?, ?;";
-                database.query(query, [(currentPage - 1) * 10, 10], (err, result) => {
-                    if (err) {
-                        throw (err);
-                    }
-                    articleBefore(result);
-                    res.render("articles", {
-                        title: "Articles",
-                        data: result,
-                        user: req.session.username,
-                        currentPage: currentPage,
-                        maxPageCount: maxPageCount,
-                    });
-                });
-            }
-        });
+    let currentPage = req.params.id;
+    let articleNumberQuery = "SELECT COUNT(*) FROM `articles`;";
+    if (!req.session.username) {
+        req.session.username = "visitor";
     }
-    else res.redirect("/");
+    database.query(articleNumberQuery, (err, result) => {
+         if (err) {
+             throw err;
+        }
+        let articleCount = Object.values(result[0])[0];
+        let maxPageCount = Math.ceil(articleCount/10);
+        let query = "SELECT * FROM `articles` ORDER BY id DESC LIMIT ?, ?;";
+        database.query(query, [(+currentPage - 1) * 10, 10], (err, result) => {
+            if (err) {
+                throw (err);
+            }
+            articleBefore(result);
+            res.render("articles", {
+                title: "Articles",
+                data: result,
+                user: req.session.username,
+                currentPage: currentPage,
+                maxPageCount: maxPageCount,
+                loggedIn:req.session.loggedIn,
+            });
+        });
+    });
 });
 
 router.post("/articles/:id", (req, res) => {
@@ -111,6 +81,7 @@ router.post("/articles/:id", (req, res) => {
             data: result,
             user: req.session.username,
             keyword: search,
+            loggedIn: req.session.loggedIn,
         });
     });
 });
@@ -200,16 +171,32 @@ router.get("/read/:id", (req, res) => {
         if (result.length == 0) {
             res.sendStatus(404);
         }
-        else if (result[0].author == req.session.username) {
+        let commentquery = "SELECT * FROM `comments` WHERE article = ?";
+        database.query(commentquery, [result[0].title], (err, commentResult) => {
+            if (err) {
+                throw err;
+            }
             res.render("readArticle", {
                 title: result[0].title,
                 data: result[0],
+                commentdata: commentResult,
+                loggedIn: req.session.loggedIn,
+                user: req.session.username,
             });
-        }
-        else res.render("readOthersArticle", {
-            title: result[0].title,
-            data: result[0],
         });
+    });
+});
+
+router.post("/read/:id", (req, res) => {
+    let comment = req.body.comment;
+    let author = req.session.username;
+    let article = req.body.title;
+    let query = "INSERT INTO `comments` (comment, author, article, written_at) VALUES (?, ?, ?, NOW())";
+    database.query(query, [comment, author, article], (err, result) => {
+        if (err) {
+            throw err;
+        }
+        res.redirect(`/read/${req.params.id}`);
     });
 });
 
@@ -221,7 +208,12 @@ router.get("/delete/:id", (req, res) => {
             if (err) {
                 throw err;
             }
-            if (result[0].author == req.session.username) {
+            if (result.length == 0) {
+                res.render("articleNotFound", {
+                    title: "no such article"
+                }); 
+            }
+            else if (result[0].author == req.session.username) {
                 let query = "DELETE FROM `articles` WHERE id = '" + articleId + "' ";
                 database.query(query, (err, result) => {
                 if (err) {
@@ -241,8 +233,40 @@ router.get("/delete/:id", (req, res) => {
     else res.redirect ("/");
 });
 
+router.get("/commentdelete/:id", (req, res) => {
+    let commentId = req.params.id;
+    backURL=req.header('Referer') || '/';
+    if (req.session.loggedIn) {
+        let query = "SELECT * FROM `comments` WHERE comment_id = " + commentId + "";
+        database.query(query, (err, result) => {
+            if (err) {
+                throw err;
+            }
+            console.log(result);
+            if (result.length == 0) {
+                res.send("the comment you tried to delete does not exist");
+            }
+            else if (result[0].author == req.session.username) {
+                let query = "DELETE FROM `comments` WHERE comment_id = " + commentId + " ";
+                database.query(query, (err, result) => {
+                if (err) {
+                    throw err;
+                }
+                if (result.affectedRows == 0) {
+                    res.send("the comment you tried to delete does not exist");
+                }
+                res.redirect(backURL);
+                });
+            }
+            else res.redirect(backURL);
+            });
+    }
+    else res.redirect ("/");
+});
+
 router.get("/logout", (req,res) => {
     req.session.loggedIn = 0;
+    req.session.username = "visitor";
     res.redirect("/");
 });
 
