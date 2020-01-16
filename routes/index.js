@@ -197,6 +197,7 @@ router.post("/add", (req, res) => {
 
 router.get("/read/:id", (req, res) => {
     let articleId = req.params.id;
+    let backURL = req.header('Referer') || '/';
     let render = function (article, comments) {
         res.render("readArticle", {
             title: article[0].title,
@@ -204,6 +205,7 @@ router.get("/read/:id", (req, res) => {
             commentdata: comments,
             user: req.session.username,
             loggedIn: req.session.loggedIn,
+            back: backURL,
         });
     };
     let readCacheKey = req.protocol + '://' + req.headers.host + req.originalUrl;
