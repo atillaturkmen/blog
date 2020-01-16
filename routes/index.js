@@ -345,12 +345,12 @@ router.post("/edit/:id", (req, res) => {
 });
 
 router.get("/stress/:id", (req, res) => {
-    let stressQuery = "INSERT INTO `articles` (author, content, summary, title, date_established, last_updated) VALUES (?, ?, ?, 'Lorem ipsum dolor sit amet', NOW(), NOW())";
+    let title = 'Lorem ipsum dolor sit amet';
     let content = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales.";
     let summary = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales.";
     let before = Date.now();
     for (let i = 0; i < +req.params.id; i++) {
-        database.query(stressQuery, ["test", content, summary]);
+        database.query(articleInsertQuery, ["test", content, summary, title]);
     }
     let after = Date.now();
     console.log(`${req.params.id} yazıyı database'e yazmak: ${+after - +before} ms`);
@@ -364,6 +364,32 @@ router.get("/purge", (req, res) => {
     database.query("DELETE FROM `comments`;");
     let after = Date.now();
     console.log(`her şeyi database'den silmek: ${after - before} ms`);
+    cache.flushAll();
+    res.redirect("/");
+});
+
+router.get("/random/:id", (req, res) => {
+    let num = req.params.id;
+    let before = Date.now();
+    for (let i = 0; i < num; i++) {
+        let content = "";
+        let summary = "";
+        let title = "";
+        let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ';
+        let charsLength = chars.length;
+        for (let p = 0; p < Math.random() * 10000; p++) {
+            content += chars.charAt(Math.floor(Math.random() * charsLength));
+        }
+        for (let p = 0; p < Math.random() * 100; p++) {
+            summary += chars.charAt(Math.floor(Math.random() * charsLength));
+        }
+        for (let p = 0; p < Math.random() * 100; p++) {
+            title += chars.charAt(Math.floor(Math.random() * charsLength));
+        }
+        database.query(articleInsertQuery, ["randomized", content, summary, title]);
+    }
+    let after = Date.now();
+    console.log(`${num} tane article yaratıp eklemek ${after - before} ms sürdü.`);
     cache.flushAll();
     res.redirect("/");
 });
