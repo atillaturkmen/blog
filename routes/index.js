@@ -10,6 +10,9 @@ const cache = new NodeCache({
     stdTTL: 5 * 60
 });
 
+//Uncomment below to close the cache
+//cache.close();
+
 
 const usernameQuery = "SELECT * FROM `users` WHERE user_name = ?";
 const usernamePasswordQuery = "SELECT * FROM `users` WHERE user_name = ? AND password = ?";
@@ -66,38 +69,41 @@ router.get("/articles/:id", (req, res) => {
     if (!req.session.username) {
         req.session.username = "visitor";
     }
+    let render = function (count, result) {
+        articleBefore(result);
+        res.render("articles", {
+            title: "Articles",
+            data: result,
+            user: req.session.username,
+            currentPage: currentPage,
+            maxPageCount: count,
+            loggedIn: req.session.loggedIn,
+        });
+    };
     let articleCacheKey = req.protocol + '://' + req.headers.host + req.originalUrl;
-    database.query(articleNumberQuery, (err, result) => {
-        if (err) {
-            throw err;
-        }
-        let articleCount = Object.values(result[0])[0];
-        let maxPageCount = Math.ceil(articleCount / 10);
-        let articleCache = cache.get(articleCacheKey);
-        let render = function (result) {
-            articleBefore(result);
-            res.render("articles", {
-                title: "Articles",
-                data: result,
-                user: req.session.username,
-                currentPage: currentPage,
-                maxPageCount: maxPageCount,
-                loggedIn: req.session.loggedIn,
-            });
-        };
-        if (articleCache) {
-            console.log(`${articleCacheKey} cache'den geldi`);
-            render(articleCache);
-        } else {
+    let pageCountCacheKey = req.protocol + '://' + req.headers.host + req.originalUrl + "count";
+    let articleCache = cache.get(articleCacheKey);
+    let pageCountCache = cache.get(pageCountCacheKey);
+    if (articleCache && pageCountCache) {
+        console.log(`${articleCacheKey} cache'den geldi.`);
+        render(pageCountCache, articleCache);
+    } else {
+        database.query(articleNumberQuery, (err, numberResult) => {
+            if (err) {
+                throw err;
+            }
+            let articleCount = Object.values(numberResult[0])[0];
+            let maxPageCount = Math.ceil(articleCount / 10);
+            cache.set(pageCountCacheKey, maxPageCount);
             database.query(articleListQuery, [(+currentPage - 1) * 10, 10], (err, result) => {
                 if (err) {
                     throw err;
                 }
                 cache.set(articleCacheKey, result);
-                render(result);
+                render(maxPageCount, result);
             });
-        }
-    });
+        });
+    }
 });
 
 router.post("/articles/:id", (req, res) => {
@@ -200,24 +206,36 @@ router.post("/add", (req, res) => {
 
 router.get("/read/:id", (req, res) => {
     let articleId = req.params.id;
-    database.query(articleSelectQuery, [articleId], (err, result) => {
+    let render = function (article, comments) {
+        res.render("readArticle", {
+            title: article[0].title,
+            data: article[0],
+            commentdata: comments,
+            user: req.session.username,
+            loggedIn: req.session.loggedIn,
+        });
+    };
+    let readCacheKey = req.protocol + '://' + req.headers.host + req.originalUrl;
+    let commentCacheKey = req.protocol + '://' + req.headers.host + req.originalUrl + "comment";
+    let readCache = cache.get(readCacheKey);
+    let commentCache = cache.get(commentCacheKey);
+    if (readCache && commentCache) {
+        console.log(`${readCacheKey} cache'den geldi`);
+        render(readCache, commentCache);
+    } else database.query(articleSelectQuery, [articleId], (err, result) => {
         if (err) {
             throw err;
         }
-        if (result.length == 0) {
+        if (result.length === 0) {
             res.sendStatus(404);
         }
+        cache.set(readCacheKey, result);
         database.query(commentSelectByArticleQuery, [result[0].id], (err, commentResult) => {
             if (err) {
                 throw err;
             }
-            res.render("readArticle", {
-                title: result[0].title,
-                data: result[0],
-                commentdata: commentResult,
-                loggedIn: req.session.loggedIn,
-                user: req.session.username,
-            });
+            cache.set(commentCacheKey, commentResult);
+            render(result, commentResult);
         });
     });
 });
@@ -231,6 +249,7 @@ router.post("/read/:id", (req, res) => {
         if (err) {
             throw err;
         }
+        cache.flushAll();
         res.redirect(`/read/${req.params.id}`);
     });
 });
@@ -268,7 +287,7 @@ router.get("/commentdelete/:id", (req, res) => {
     let commentId = req.params.id;
     let backURL = req.header('Referer') || '/';
     if (req.session.loggedIn) {
-        database.query(commentSelectByIdQuery, ['' + commentId + ''], (err, result) => {
+        database.query(commentSelectByIdQuery, [commentId], (err, result) => {
             if (err) {
                 throw err;
             }

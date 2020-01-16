@@ -21,8 +21,6 @@ app.use(bodyParser.urlencoded({
 }));
 app.set('view engine', 'pug');
 
-//const {getHomePage, writingPageRender, submitContent, readArticle, deleteArticle, getArticles, getRegistration, submitRegistration, logout} = require("./routes/index");
-
 const database = mysql.createConnection({
     host: "db",
     user: "blog",
@@ -37,17 +35,6 @@ database.connect(function (err) {
 global.database = database;
 
 app.use("/", routes);
-
-// indexOld ile kullanılıyordu aşağıdakiler
-// app.get("/", getHomePage);
-// app.post("/", getArticles);
-// app.get("/registration", getRegistration);
-// app.post("/registration", submitRegistration);
-// app.get("/add", writingPageRender);
-// app.post("/add", submitContent);
-// app.get("/read/:id", readArticle);
-// app.get("/delete/:id", deleteArticle);
-// app.get("/logout", logout);
 
 const server = app.listen(3000, () => {
     console.log(`Running on port ${server.address().port}`);
