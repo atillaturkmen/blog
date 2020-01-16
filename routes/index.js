@@ -108,9 +108,10 @@ router.get("/articles/:id", (req, res) => {
 
 router.post("/articles/:id", (req, res) => {
     let search = req.body.search;
-    let articleSearchCacheKey = req.protocol + '://' + req.headers.host + req.originalUrl + search;
-    let articleSearchCache = cache.get(articleSearchCacheKey);
-    let render = function (result) {
+    database.query(articleSearchQuery, ['%' + search + '%', '%' + search + '%', '%' + search + '%', '%' + search + '%'], (err, result) => {
+        if (err) {
+            return res.status(500).send(err);
+        }
         articleBefore(result);
         res.render("searchResults", {
             title: "Search Results",
@@ -119,16 +120,6 @@ router.post("/articles/:id", (req, res) => {
             keyword: search,
             loggedIn: req.session.loggedIn,
         });
-    };
-    if (articleSearchCache) {
-        console.log(`${articleSearchCacheKey} cache'den geldi`);
-        render(articleSearchCache);
-    } else database.query(articleSearchQuery, ['%' + search + '%', '%' + search + '%', '%' + search + '%', '%' + search + '%'], (err, result) => {
-        if (err) {
-            return res.status(500).send(err);
-        }
-        cache.set(articleSearchCacheKey, result);
-        render(result);
     });
 });
 
