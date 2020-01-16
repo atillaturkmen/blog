@@ -225,18 +225,18 @@ router.get("/read/:id", (req, res) => {
     } else database.query(articleSelectQuery, [articleId], (err, result) => {
         if (err) {
             throw err;
-        }
-        if (result.length === 0) {
+        } else if (!result.length) {
             res.sendStatus(404);
+        } else {
+            cache.set(readCacheKey, result);
+            database.query(commentSelectByArticleQuery, [result[0].id], (err, commentResult) => {
+                if (err) {
+                    throw err;
+                }
+                cache.set(commentCacheKey, commentResult);
+                render(result, commentResult);
+            });
         }
-        cache.set(readCacheKey, result);
-        database.query(commentSelectByArticleQuery, [result[0].id], (err, commentResult) => {
-            if (err) {
-                throw err;
-            }
-            cache.set(commentCacheKey, commentResult);
-            render(result, commentResult);
-        });
     });
 });
 
@@ -261,7 +261,7 @@ router.get("/delete/:id", (req, res) => {
             if (err) {
                 throw err;
             }
-            if (result.length == 0) {
+            if (!result.length) {
                 res.render("articleNotFound", {
                     title: "no such article"
                 });
@@ -291,15 +291,12 @@ router.get("/commentdelete/:id", (req, res) => {
             if (err) {
                 throw err;
             }
-            if (result.length == 0) {
+            if (!result.length) {
                 res.send("the comment you tried to delete does not exist");
             } else if (result[0].author == req.session.username) {
-                database.query(commentDeleteQuery, ['' + commentId + ''], (err, result) => {
+                database.query(commentDeleteQuery, [commentId], (err, result) => {
                     if (err) {
                         throw err;
-                    }
-                    if (result.affectedRows == 0) {
-                        res.send("the comment you tried to delete does not exist");
                     }
                     cache.flushAll();
                     res.redirect(backURL);
@@ -322,22 +319,17 @@ router.get("/edit/:id", (req, res) => {
             if (err) {
                 throw err;
             }
-            if (result.length == 0) {
+            if (!result.length) {
                 res.sendStatus(404);
             } else if (result[0].author == req.session.username) {
                 if (err) {
                     throw err;
                 }
-                if (result.affectedRows == 0) {
-                    res.render("articleNotFound", {
-                        title: "no such article"
-                    });
-                }
                 res.render("editArticle", {
                     title: result[0].title,
                     data: result[0],
                 });
-            } else res.redirect("/articles");
+            } else res.redirect("/");
         });
     } else res.redirect("/");
 });
@@ -372,7 +364,7 @@ router.get("/stress/:id", (req, res) => {
     let after = Date.now();
     console.log(`${req.params.id} yazıyı database'e yazmak: ${+after - +before} ms`);
     cache.flushAll();
-    res.redirect("/articles");
+    res.redirect("/");
 });
 
 router.get("/purge", (req, res) => {
