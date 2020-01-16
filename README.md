@@ -1,19 +1,18 @@
 # blog
 
-Programs you need to be able to execute the blog application:  
-1. node.js  
-2. mysql  
+This program runs on docker. Hence you need to make sure you have docker installed on your pc.
 
 Application built on:
 
 - node version 12.13.1  
 - express version 4.17.1  
-- mysql 8.0.18  
+- mysql version 8.0.18  
+- docker version 19.03.5
 
 
 SETUP  
 
-First of all, make sure you have node.js and mysql installed on your pc and that they are up-to-date.  
-Then, copy the code in blog-database.sql to mysql workbench and run it. In this way, you create the database of the blog.  
-Finally, run the demo.js file via a file explorer or from the command line.  
+First of all, make sure you have docker desktop installed on your pc and that it is up-to-date.  
+Then navigate to the folder where application is located via a preferred terminal and enter command `docker-compose --build`.
+Docker compose will create an image and start the program.
 Now you can visit "localhost:3000" in your browser and see the functioning app.  
