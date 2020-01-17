@@ -347,53 +347,135 @@ router.post("/edit/:id", (req, res) => {
 });
 
 router.get("/stress/:id", (req, res) => {
+    let num = req.params.id;
     let title = 'Lorem ipsum dolor sit amet';
     let content = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales.";
     let summary = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales.";
-    let before = Date.now();
-    for (let i = 0; i < +req.params.id; i++) {
-        database.query(articleInsertQuery, ["test", content, summary, title]);
+    if (num < 1012) {
+        let before = Date.now();
+        let multipleArticleInsertQuery = "INSERT INTO `articles` (author, content, summary, title, date_established, last_updated) VALUES ";
+        let arr = [];
+        let insert = function (max) {
+            for (let i = 0; i < max; i++) {
+                multipleArticleInsertQuery += `('test', ?, ?, ?, NOW(), NOW())`;
+                if (i == max - 1) break;
+                multipleArticleInsertQuery += ",";
+            }
+            for (let i = 0; i < max; i++) {
+                arr.push(content);
+                arr.push(summary);
+                arr.push(title);
+            }
+        };
+        insert(num);
+        database.query(multipleArticleInsertQuery, arr, (err, result) => {
+            if (err) throw err;
+            let after = Date.now();
+            console.log(`${num} tane article yaratıp eklemek ${after - before} ms sürdü.`);
+        });
+        cache.flushAll();
+        res.redirect("/");
+    } else {
+        let before = Date.now();
+        for (let i = 0; i < num; i++) {
+            database.query(articleInsertQuery, ["test", content, summary, title], (err, result) => {
+                if (err) throw err;
+                if (i == num - 1) {
+                    let after = Date.now();
+                    console.log(`${req.params.id} yazıyı database'e yazmak: ${after - before} ms`);
+                }
+            });
+        }
+        cache.flushAll();
+        res.redirect("/");
     }
-    let after = Date.now();
-    console.log(`${req.params.id} yazıyı database'e yazmak: ${+after - +before} ms`);
-    cache.flushAll();
-    res.redirect("/");
 });
 
 router.get("/purge", (req, res) => {
     let before = Date.now();
-    database.query("DELETE FROM `articles`;");
-    database.query("DELETE FROM `comments`;");
-    let after = Date.now();
-    console.log(`her şeyi database'den silmek: ${after - before} ms`);
+    database.query("DELETE FROM `articles`;", (err, result) => {
+        if (err) throw err;
+        let after = Date.now();
+        console.log(`deleting all articles: ${after - before} ms`);
+    });
+    database.query("DELETE FROM `comments`;", (err, result) => {
+        if (err) throw err;
+        let after = Date.now();
+        console.log(`deleting all comments: ${after - before} ms`);
+    });
     cache.flushAll();
     res.redirect("/");
 });
 
 router.get("/random/:id", (req, res) => {
     let num = req.params.id;
-    let before = Date.now();
-    for (let i = 0; i < num; i++) {
-        let content = "";
-        let summary = "";
-        let title = "";
-        let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ';
-        let charsLength = chars.length;
-        for (let p = 0; p < Math.random() * 10000; p++) {
-            content += chars.charAt(Math.floor(Math.random() * charsLength));
+    if (num < 9000) {
+        let before = Date.now();
+        let multipleArticleInsertQuery = "INSERT INTO `articles` (author, content, summary, title, date_established, last_updated) VALUES ";
+        let insert = function (max) {
+            for (let i = 0; i < max; i++) {
+                multipleArticleInsertQuery += "(?, ?, ?, ?, NOW(), NOW())";
+                if (i == max - 1) break;
+                multipleArticleInsertQuery += ",";
+            }
+        };
+        let autconsumtit = [];
+        for (let i = 0; i < num; i++) {
+            let content = "";
+            let summary = "";
+            let title = "";
+            let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789   ';
+            let charsLength = chars.length;
+            autconsumtit.push("randomized");
+            for (let p = 0; p < Math.random() * 100000; p++) {
+                content += chars.charAt(Math.floor(Math.random() * charsLength));
+            }
+            autconsumtit.push(content);
+            for (let p = 0; p < Math.random() * 100; p++) {
+                summary += chars.charAt(Math.floor(Math.random() * charsLength));
+            }
+            autconsumtit.push(summary);
+            for (let p = 0; p < Math.random() * 100; p++) {
+                title += chars.charAt(Math.floor(Math.random() * charsLength));
+            }
+            autconsumtit.push(title);
         }
-        for (let p = 0; p < Math.random() * 100; p++) {
-            summary += chars.charAt(Math.floor(Math.random() * charsLength));
+        insert(num);
+        database.query(multipleArticleInsertQuery, autconsumtit, (err, result) => {
+            if (err) throw err;
+            let after = Date.now();
+            console.log(`${num} tane article yaratıp eklemek ${after - before} ms sürdü.`);
+        });
+        cache.flushAll();
+        res.redirect("/");
+    } else {
+        let before = Date.now();
+        for (let i = 0; i < num; i++) {
+            let content = "";
+            let summary = "";
+            let title = "";
+            let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ';
+            let charsLength = chars.length;
+            for (let p = 0; p < Math.random() * 10000; p++) {
+                content += chars.charAt(Math.floor(Math.random() * charsLength));
+            }
+            for (let p = 0; p < Math.random() * 100; p++) {
+                summary += chars.charAt(Math.floor(Math.random() * charsLength));
+            }
+            for (let p = 0; p < Math.random() * 100; p++) {
+                title += chars.charAt(Math.floor(Math.random() * charsLength));
+            }
+            database.query(articleInsertQuery, ["randomized", content, summary, title], (err, result) => {
+                if (err) throw err;
+                if (i == num - 1) {
+                    let after = Date.now();
+                    console.log(`${num} tane article yaratıp eklemek ${after - before} ms sürdü.`);
+                }
+            });
         }
-        for (let p = 0; p < Math.random() * 100; p++) {
-            title += chars.charAt(Math.floor(Math.random() * charsLength));
-        }
-        database.query(articleInsertQuery, ["randomized", content, summary, title]);
+        cache.flushAll();
+        res.redirect("/");
     }
-    let after = Date.now();
-    console.log(`${num} tane article yaratıp eklemek ${after - before} ms sürdü.`);
-    cache.flushAll();
-    res.redirect("/");
 });
 
 
