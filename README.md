@@ -13,6 +13,6 @@ Application built on:
 SETUP  
 
 First of all, make sure you have docker desktop installed on your pc and that it is up-to-date.  
-Then navigate to the folder where application is located via a preferred terminal and enter command `docker-compose up --build`.
+Then navigate to the folder where application is located via a preferred terminal and enter command `docker-compose up`.
 Docker compose will create an image and start the program.
 Now you can visit "localhost:3000" in your browser and see the functioning app.  
