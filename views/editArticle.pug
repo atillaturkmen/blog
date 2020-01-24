@@ -30,5 +30,9 @@ block content
                 br
                 br
                 script.
-                    let summary = new FroalaEditor('textarea#summary')
-                    let content = new FroalaEditor("textarea#content")
+                    let summary = new FroalaEditor('textarea#summary', {
+                        attribution: false
+                    })
+                    let content = new FroalaEditor("textarea#content", {
+                        attribution: false
+                    })
