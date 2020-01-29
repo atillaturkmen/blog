@@ -371,7 +371,7 @@ router.get("/stress/:id", (req, res) => {
         database.query(multipleArticleInsertQuery, arr, (err, result) => {
             if (err) throw err;
             let after = Date.now();
-            console.log(`${num} tane article yaratıp eklemek ${after - before} ms sürdü.`);
+            console.log(`${num} tane article eklemek ${after - before} ms sürdü.`);
         });
         cache.flushAll();
         res.redirect("/");
@@ -482,7 +482,7 @@ router.get("/random/:id", (req, res) => {
 function articleBefore(result) {
     let lastUpdated;
     result.forEach(element => {
-        lastUpdated = element.last_updated;
+        lastUpdated = Date.parse(element.last_updated);
         let now = new Date();
         let fark = now - lastUpdated;
         if (fark < 60000) {
