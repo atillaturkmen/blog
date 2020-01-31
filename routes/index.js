@@ -29,6 +29,33 @@ const commentSelectByIdQuery = "SELECT * FROM `comments` WHERE comment_id = ?";
 const commentInsertQuery = "INSERT INTO `comments` (comment, author, article, written_at, article_id) VALUES (?, ?, ?, NOW(), ?)";
 const commentDeleteQuery = "DELETE FROM `comments` WHERE comment_id = ?";
 const commentDeleteByArticleQuery = "DELETE FROM `comments` WHERE article_id = ?";
+const checkReviewQuery = "SELECT * FROM reviews";
+const reviewSelectQuery = "SELECT * FROM reviews WHERE article_id = ?";
+const deleteReviewQuery = "DELETE FROM `reviews` WHERE user_ip = ?";
+const insertReviewQuery = "INSERT INTO `reviews` (article_id, point, reviewed_at, user_ip) VALUES (?, ?, NOW(), ?);";
+const clickSelectQuery = "SELECT * FROM `click` WHERE article_id = ?;";
+// WHERE reviewed_at > NOW() - INTERVAL 1 HOUR
+
+
+let clicks = new Map();
+
+setInterval(function(){
+    let insertClickQuery = "INSERT INTO `click` (article_id, clicked_at, user_ip) VALUES ";
+    if (clicks.size) {
+        for (let users of clicks) {
+            insertClickQuery += `('${users[1].articleId}', ${users[1].clickedAt}, '${users[1].ip}'),`;
+        }
+        insertClickQuery = insertClickQuery.substr(0, insertClickQuery.length - 1);
+        database.query(insertClickQuery, (err, result) => {
+            if (err) {
+                throw err;
+            }
+            clicks.clear();
+            
+            console.log("The number of views for " + result.affectedRows + " posts has been changed.");
+        });
+    }
+}, 5000);
 
 
 router.get("/", (req, res) => {
@@ -198,7 +225,8 @@ router.post("/add", (req, res) => {
 router.get("/read/:id", (req, res) => {
     let articleId = req.params.id;
     let backURL = req.header('Referer') || '/';
-    let render = function (article, comments) {
+    let ip = req.ip;
+    let render = function (article, comments, rating, click) {
         res.render("readArticle", {
             title: article[0].title,
             data: article[0],
@@ -206,45 +234,111 @@ router.get("/read/:id", (req, res) => {
             user: req.session.username,
             loggedIn: req.session.loggedIn,
             back: backURL,
+            rating: rating,
+            click: click,
         });
     };
     let readCacheKey = req.protocol + '://' + req.headers.host + req.originalUrl;
     let commentCacheKey = req.protocol + '://' + req.headers.host + req.originalUrl + "comment";
+    let reviewCacheKey = req.protocol + '://' + req.headers.host + req.originalUrl + "review";
+    let clickCacheKey = req.protocol + '://' + req.headers.host + req.originalUrl + "review";
     let readCache = cache.get(readCacheKey);
     let commentCache = cache.get(commentCacheKey);
+    let reviewCache = cache.get(reviewCacheKey);
+    let clickCache = cache.get(clickCacheKey);
+    if (!clicks.has(ip+" "+articleId)) {
+        let user = {
+            ip: ip,
+            clickedAt: Date.now(),
+            articleId: articleId,
+        };
+        clicks.set(ip+" "+articleId, user);
+    }
     if (readCache && commentCache) {
         console.log(`${readCacheKey} cache'den geldi`);
-        render(readCache, commentCache);
-    } else database.query(articleSelectQuery, [articleId], (err, result) => {
+        render(readCache, commentCache, reviewCache, clickCache);
+    } else 
+    database.query(articleSelectQuery, [articleId], (err, result) => {
         if (err) {
             throw err;
         } else if (!result.length) {
             res.sendStatus(404);
         } else {
             cache.set(readCacheKey, result);
-            database.query(commentSelectByArticleQuery, [result[0].id], (err, commentResult) => {
+            database.query(commentSelectByArticleQuery, [articleId], (err, commentResult) => {
                 if (err) {
                     throw err;
                 }
                 cache.set(commentCacheKey, commentResult);
-                render(result, commentResult);
+                database.query(reviewSelectQuery, [articleId], (err, reviewResult) => {
+                    if (err) {
+                        throw err;
+                    }
+                    let rating = 0;
+                    for (let i = 0; i < reviewResult.length; i++) {
+                        rating += reviewResult[i].point;
+                    }
+                    if (rating) {
+                        rating /= reviewResult.length;
+                    }
+                    cache.set(reviewCacheKey, rating);
+                    database.query(clickSelectQuery, [articleId], (err, clickResult) => {
+                        if (err) {
+                            throw err;
+                        }
+                        let click;
+                        if (!clickResult.length) {
+                            click = 1;
+                        } else {
+                            click = clickResult.length;
+                        }
+                        render(result, commentResult, rating, click);
+                    });
+                });
             });
         }
     });
 });
 
 router.post("/read/:id", (req, res) => {
-    let comment = req.body.comment;
-    let author = req.session.username;
-    let article = req.body.title;
     let articleId = req.params.id;
-    database.query(commentInsertQuery, [comment, author, article, articleId], (err, result) => {
-        if (err) {
-            throw err;
-        }
-        cache.flushAll();
-        res.redirect(`/read/${req.params.id}`);
-    });
+    if (req.body.comment) {
+        let comment = req.body.comment;
+        let author = req.session.username;
+        let article = req.body.title;
+        database.query(commentInsertQuery, [comment, author, article, articleId], (err, result) => {
+            if (err) {
+                throw err;
+            }
+            cache.flushAll();
+            res.redirect(`/read/${req.params.id}`);
+        });
+    } else {
+        let rating = req.body.rating;
+        let ip = req.ip;
+        database.query(checkReviewQuery, [], (err, result) => {
+            if (err) {
+                return res.status(500).send(err);
+            }
+            //delete the review if user reviewed the same article
+            for (let i = 0; i < result.length; i++){
+                if (result[i].user_ip == ip) {
+                    database.query(deleteReviewQuery, [ip], (errdelete, deleteresult) => {
+                        if (errdelete) {
+                            return res.status(500).send(errdelete);
+                        }
+                    });
+                }
+            }
+            database.query(insertReviewQuery, [articleId, rating, ip], (errinsert, resultinsert) => {
+                if (errinsert) {
+                    return res.status(500).send(errinsert);
+                }
+                cache.flushAll();
+                res.redirect(`/read/${req.params.id}`);
+            });
+        });
+    }
 });
 
 router.get("/delete/:id", (req, res) => {
@@ -393,6 +487,8 @@ router.get("/stress/:id", (req, res) => {
 
 router.get("/purge", (req, res) => {
     let before = Date.now();
+    database.query("DELETE FROM `reviews`;");
+    database.query("DELETE FROM `click`;");
     database.query("DELETE FROM `articles`;", (err, result) => {
         if (err) throw err;
         let after = Date.now();

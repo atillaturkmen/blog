@@ -21,6 +21,8 @@ app.use(bodyParser.urlencoded({
 }));
 app.set('view engine', 'pug');
 
+app.enable('trust proxy');
+
 const database = mysql.createConnection({
     host: "db",
     user: "blog",
