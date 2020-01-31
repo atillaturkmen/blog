@@ -117,7 +117,7 @@ DROP TABLE IF EXISTS `click`;
 CREATE TABLE `click` (
   `id` int(5) NOT NULL AUTO_INCREMENT,
   `article_id` int(5) NOT NULL,
-  `clicked_at` datetime NOT NULL,
+  `clicked_at` varchar(255) NOT NULL,
   `user_ip` varchar(255) NOT NULL,
   PRIMARY KEY (`id`),
   FOREIGN KEY (`article_id`)
