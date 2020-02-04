@@ -13,7 +13,6 @@ block content
                 h3 Write something:
                 br
                 form#content-form(action='', method='post' class="form-registration")
-
                     .form-group.col-md-12
                         input#title.form-control(type="text", name="title", placeholder="Title of your article", autocomplete= "off", required)
                         br
@@ -28,10 +27,10 @@ block content
 
                 script.
                     let summary = new FroalaEditor('textarea#summary', {
-                        placeholderText: 'Summary of your article'
+                        placeholderText: 'Summary of your article',
                         attribution: false
                     })
                     let content = new FroalaEditor("textarea#content", {
-                        placeholderText: 'Write here'
+                        placeholderText: 'Write here',
                         attribution: false
                     })
