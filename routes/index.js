@@ -279,7 +279,7 @@ router.get("/read/:id", (req, res) => {
                             rating += reviewResult[i].point;
                         }
                         if (rating) {
-                            rating /= reviewResult.length;
+                            rating = Math.round(rating / reviewResult.length);
                         }
                         cache.set(reviewCacheKey, rating);
                         database.query(clickSelectQuery, [articleId], (err, clickResult) => {

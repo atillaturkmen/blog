@@ -18,8 +18,6 @@ block content
                 br
                 a.button.btn.btn-secondary.float-left(href='/', style='margin-right:20px;')  
                     i.fa.fa-home
-                a.button.btn.btn-secondary.float-left(href=back, style='margin-right:20px;') < Back to articles
-                    i.fa.fa-
                 if user == data.author
                     a.button.btn.float-left(href=`/edit/${data.id}`, style='margin-right:20px;')
                         i.fa.fa-pencil
@@ -78,7 +76,6 @@ block content
                                         p.card-title!= comment.comment
                                     a.btn.float-right.text-danger(href=`/commentdelete/${comment.comment_id}`, onclick="return confirm('Do you confirm to delete this comment?')")
                                         i.fa.fa-trash
-                                    
                     else
                         .card.border-secondary.mb-3
                             div.container
