@@ -24,7 +24,7 @@ block content
             br
             if data.length
                 each article in data
-                    if article.author == user
+                    if article.author == user || user == "Atilla"
                             .card.border-info.mb-3
                                 .card-body
                                     .text-center
