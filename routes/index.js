@@ -322,26 +322,30 @@ router.post("/read/:id", (req, res) => {
     } else {
         let rating = req.body.rating;
         let ip = req.ip;
-        database.query(checkReviewQuery, [ip, articleId], (err, result) => {
-            if (err) {
-                return res.status(500).send(err);
-            }
-            //delete the review if user reviewed the same article
-            if (result.length) {
-                database.query(deleteReviewQuery, [ip, articleId], (err, result) => {
-                    if (err) {
-                        return res.status(500).send(err);
-                    }
-                });
-            }
-            database.query(insertReviewQuery, [articleId, rating, ip], (errinsert, resultinsert) => {
-                if (errinsert) {
-                    return res.status(500).send(errinsert);
+        if (rating) {
+            database.query(checkReviewQuery, [ip, articleId], (err, result) => {
+                if (err) {
+                    return res.status(500).send(err);
                 }
-                cache.flushAll();
-                res.redirect(`/read/${req.params.id}`);
+                //delete the review if user reviewed the same article
+                if (result.length) {
+                    database.query(deleteReviewQuery, [ip, articleId], (err, result) => {
+                        if (err) {
+                            return res.status(500).send(err);
+                        }
+                    });
+                }
+                database.query(insertReviewQuery, [articleId, rating, ip], (errinsert, resultinsert) => {
+                    if (errinsert) {
+                        return res.status(500).send(errinsert);
+                    }
+                    cache.flushAll();
+                    res.redirect(`/read/${req.params.id}`);
+                });
             });
-        });
+        } else {
+            res.redirect(`/read/${req.params.id}`);
+        }
     }
 });
 
