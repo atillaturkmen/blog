@@ -78,6 +78,7 @@ router.post("/login", (req, res) => {
         if (result.length > 0) {
             req.session.loggedIn = 1;
             req.session.username = username;
+            req.session.isAdmin = result[0].is_admin;
             res.redirect("/articles");
         } else {
             res.render("wrongPasswordPage", {
@@ -102,6 +103,7 @@ router.get("/articles/:id", (req, res) => {
             title: "Articles",
             data: result,
             user: req.session.username,
+            isAdmin: req.session.isAdmin,
             currentPage: currentPage,
             maxPageCount: count,
             loggedIn: req.session.loggedIn,
@@ -144,6 +146,7 @@ router.post("/articles/:id", (req, res) => {
             title: "Search Results",
             data: result,
             user: req.session.username,
+            isAdmin: req.session.isAdmin,
             keyword: search,
             loggedIn: req.session.loggedIn,
         });
@@ -232,6 +235,7 @@ router.get("/read/:id", (req, res) => {
             data: article[0],
             commentdata: comments,
             user: req.session.username,
+            isAdmin: req.session.isAdmin,
             loggedIn: req.session.loggedIn,
             back: backURL,
             rating: rating,
