@@ -356,7 +356,7 @@ router.get("/delete/:id", (req, res) => {
                 res.render("articleNotFound", {
                     title: "no such article"
                 });
-            } else if (result[0].author == req.session.username) {
+            } else if (result[0].author == req.session.username || req.session.isAdmin) {
                 database.query(articleDeleteQuery, ['' + articleId + ''], (err, result) => {
                     if (err) {
                         throw err;
@@ -384,7 +384,7 @@ router.get("/commentdelete/:id", (req, res) => {
             }
             if (!result.length) {
                 res.send("the comment you tried to delete does not exist");
-            } else if (result[0].author == req.session.username) {
+            } else if (result[0].author == req.session.username || req.session.isAdmin) {
                 database.query(commentDeleteQuery, [commentId], (err, result) => {
                     if (err) {
                         throw err;
