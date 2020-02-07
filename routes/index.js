@@ -449,7 +449,7 @@ router.get("/stress/:id", (req, res) => {
     let title = 'Lorem ipsum dolor sit amet';
     let content = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales.";
     let summary = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse non euismod purus. Morbi viverra sed mauris at placerat. Integer iaculis nulla sed orci congue interdum. In molestie hendrerit mattis. Maecenas erat nunc, sagittis id lectus non, malesuada efficitur mauris. Cras blandit congue commodo. Sed porttitor molestie ligula sit amet scelerisque. Vestibulum efficitur lectus vitae condimentum posuere. Mauris feugiat tortor at aliquet sodales.";
-    if (num < 1012) {
+    if (num < 1012 && req.session.isAdmin) {
         let before = Date.now();
         let multipleArticleInsertQuery = "INSERT INTO `articles` (author, content, summary, title, date_established, last_updated) VALUES ";
         let arr = [];
@@ -474,42 +474,35 @@ router.get("/stress/:id", (req, res) => {
         cache.flushAll();
         res.redirect("/");
     } else {
-        let before = Date.now();
-        for (let i = 0; i < num; i++) {
-            database.query(articleInsertQuery, ["test", content, summary, title], (err, result) => {
-                if (err) throw err;
-                if (i == num - 1) {
-                    let after = Date.now();
-                    console.log(`${req.params.id} yazıyı database'e yazmak: ${after - before} ms`);
-                }
-            });
-        }
-        cache.flushAll();
         res.redirect("/");
     }
 });
 
 router.get("/purge", (req, res) => {
-    let before = Date.now();
-    database.query("DELETE FROM `reviews`;");
-    database.query("DELETE FROM `click`;");
-    database.query("DELETE FROM `articles`;", (err, result) => {
-        if (err) throw err;
-        let after = Date.now();
-        console.log(`deleting all articles: ${after - before} ms`);
-    });
-    database.query("DELETE FROM `comments`;", (err, result) => {
-        if (err) throw err;
-        let after = Date.now();
-        console.log(`deleting all comments: ${after - before} ms`);
-    });
-    cache.flushAll();
-    res.redirect("/");
+    if (req.session.isAdmin) {
+        let before = Date.now();
+        database.query("DELETE FROM `reviews`;");
+        database.query("DELETE FROM `click`;");
+        database.query("DELETE FROM `articles`;", (err, result) => {
+            if (err) throw err;
+            let after = Date.now();
+            console.log(`deleting all articles: ${after - before} ms`);
+        });
+        database.query("DELETE FROM `comments`;", (err, result) => {
+            if (err) throw err;
+            let after = Date.now();
+            console.log(`deleting all comments: ${after - before} ms`);
+        });
+        cache.flushAll();
+        res.redirect("/");
+    } else {
+        res.redirect("/");
+    }
 });
 
 router.get("/random/:id", (req, res) => {
     let num = req.params.id;
-    if (num < 9000) {
+    if (num < 9000 && req.session.isAdmin) {
         let before = Date.now();
         let multipleArticleInsertQuery = "INSERT INTO `articles` (author, content, summary, title, date_established, last_updated) VALUES ";
         let insert = function (max) {
@@ -549,31 +542,6 @@ router.get("/random/:id", (req, res) => {
         cache.flushAll();
         res.redirect("/");
     } else {
-        let before = Date.now();
-        for (let i = 0; i < num; i++) {
-            let content = "";
-            let summary = "";
-            let title = "";
-            let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ';
-            let charsLength = chars.length;
-            for (let p = 0; p < Math.random() * 10000; p++) {
-                content += chars.charAt(Math.floor(Math.random() * charsLength));
-            }
-            for (let p = 0; p < Math.random() * 100; p++) {
-                summary += chars.charAt(Math.floor(Math.random() * charsLength));
-            }
-            for (let p = 0; p < Math.random() * 100; p++) {
-                title += chars.charAt(Math.floor(Math.random() * charsLength));
-            }
-            database.query(articleInsertQuery, ["randomized", content, summary, title], (err, result) => {
-                if (err) throw err;
-                if (i == num - 1) {
-                    let after = Date.now();
-                    console.log(`${num} tane article yaratıp eklemek ${after - before} ms sürdü.`);
-                }
-            });
-        }
-        cache.flushAll();
         res.redirect("/");
     }
 });
